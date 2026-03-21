@@ -134,6 +134,10 @@ body {
   background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.03);
   min-height: 76px; transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   animation: fadeSlideUp 0.5s ease both;
+  position: relative; z-index: 1;
+}
+.tier-row:has(.actress-card-wrap:hover) {
+  z-index: 200;
 }
 .tier-row.drag-over {
   border: 1px solid rgba(255,255,255,0.12); background: rgba(255,255,255,0.035);
@@ -153,7 +157,7 @@ body {
   border: 1px solid rgba(255,255,255,0.3); border-radius: 6px; outline: none;
 }
 .tier-count { font-size: 10px; color: rgba(255,255,255,0.5); font-weight: 600; letter-spacing: 0.5px; }
-.tier-content { flex: 1; display: flex; flex-wrap: wrap; gap: 10px; padding: 14px; align-items: center; align-content: center; }
+.tier-content { flex: 1; display: flex; flex-wrap: wrap; gap: 10px; padding: 14px; align-items: center; align-content: center; overflow: visible; }
 
 /* ── Actress Card ── */
 .actress-card {
