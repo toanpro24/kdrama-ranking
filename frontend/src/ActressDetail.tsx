@@ -1,0 +1,197 @@
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import type { Actress } from "./types";
+import "./index.css";
+
+const BASE = "http://localhost:8000/api";
+
+const TIER_INFO: Record<string, { label: string; color: string; desc: string }> = {
+  splus: { label: "S+", color: "#E500A4", desc: "Legendary" },
+  s: { label: "S", color: "#FF2942", desc: "Supreme" },
+  a: { label: "A", color: "#FF7B3A", desc: "Excellent" },
+  b: { label: "B", color: "#FFC53A", desc: "Great" },
+  c: { label: "C", color: "#3AD9A0", desc: "Good" },
+  d: { label: "D", color: "#3A8FFF", desc: "Average" },
+};
+
+export default function ActressDetail() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [actress, setActress] = useState<Actress | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [lightbox, setLightbox] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch(`${BASE}/actresses/${id}`)
+      .then((r) => r.json())
+      .then((data) => { setActress(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [id]);
+
+  if (loading) return <div className="loading">Loading...</div>;
+  if (!actress) return <div className="loading">Actress not found.</div>;
+
+  const tier = actress.tier ? TIER_INFO[actress.tier] : null;
+  const fallbackImg = `https://ui-avatars.com/api/?name=${encodeURIComponent(actress.name)}&size=400&background=1a1a2e&color=fff&bold=true`;
+
+  // Collect all available images for the gallery: main + gallery + drama posters
+  const allGalleryImages = [
+    ...(actress.gallery || []),
+    ...(actress.dramas || []).filter(d => d.poster).map(d => d.poster as string),
+  ];
+  // Deduplicate
+  const uniqueGallery = [...new Set(allGalleryImages)];
+
+  return (
+    <div className="detail-page">
+      {/* Lightbox */}
+      {lightbox && (
+        <div className="lightbox" onClick={() => setLightbox(null)}>
+          <button className="lightbox-close" onClick={() => setLightbox(null)}>✕</button>
+          <img src={lightbox} alt="Full size" className="lightbox-img" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
+
+      <button className="detail-back" onClick={() => navigate(-1)}>← Back to Tier List</button>
+
+      {/* Hero Section */}
+      <div className="detail-hero">
+        <div className="detail-hero-bg" style={{ backgroundImage: `url(${actress.image || fallbackImg})` }} />
+        <div className="detail-hero-overlay" />
+        <div className="detail-hero-content">
+          <img
+            className="detail-portrait"
+            src={actress.image || fallbackImg}
+            alt={actress.name}
+            onClick={() => setLightbox(actress.image || fallbackImg)}
+            onError={(e) => { (e.target as HTMLImageElement).src = fallbackImg; }}
+          />
+          <div className="detail-hero-text">
+            <h1 className="detail-name">{actress.name}</h1>
+            {tier && (
+              <div className="detail-tier-pill" style={{ background: tier.color + "22", borderColor: tier.color }}>
+                <span className="detail-tier-letter" style={{ background: tier.color }}>{tier.label}</span>
+                <span style={{ color: tier.color }}>{tier.desc} Tier</span>
+              </div>
+            )}
+            {!tier && <div className="detail-tier-pill unranked"><span style={{ color: "#666" }}>Unranked</span></div>}
+            <p className="detail-tagline">Best known for <strong>{actress.known}</strong> ({actress.year})</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Info Grid */}
+      <div className="detail-grid">
+        {/* Personal Info Card */}
+        <div className="detail-section">
+          <h2 className="detail-section-title">Personal Information</h2>
+          <div className="detail-info-grid">
+            <div className="detail-info-item">
+              <span className="detail-info-icon">&#x1F382;</span>
+              <div>
+                <span className="detail-info-label">Born</span>
+                <span className="detail-info-value">{actress.birthDate || "Unknown"}</span>
+              </div>
+            </div>
+            <div className="detail-info-item">
+              <span className="detail-info-icon">&#x1F4CD;</span>
+              <div>
+                <span className="detail-info-label">Birthplace</span>
+                <span className="detail-info-value">{actress.birthPlace || "Unknown"}</span>
+              </div>
+            </div>
+            <div className="detail-info-item">
+              <span className="detail-info-icon">&#x1F3AC;</span>
+              <div>
+                <span className="detail-info-label">Primary Genre</span>
+                <span className="detail-info-value">{actress.genre}</span>
+              </div>
+            </div>
+            <div className="detail-info-item">
+              <span className="detail-info-icon">&#x1F3E2;</span>
+              <div>
+                <span className="detail-info-label">Agency</span>
+                <span className="detail-info-value">{actress.agency || "Independent"}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Photo Gallery Card */}
+        <div className="detail-section">
+          <h2 className="detail-section-title">
+            Photo Gallery
+            <span className="detail-section-count">{uniqueGallery.length} photos</span>
+          </h2>
+          <div className="detail-gallery">
+            {uniqueGallery.map((img, i) => (
+              <img
+                key={i}
+                className="detail-gallery-img"
+                src={img}
+                alt={`${actress.name} photo ${i + 1}`}
+                onClick={() => setLightbox(img)}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
+            ))}
+            {uniqueGallery.length === 0 && <p className="detail-empty">No gallery photos available.</p>}
+          </div>
+        </div>
+
+        {/* Filmography Card - full width with posters */}
+        <div className="detail-section full-width">
+          <h2 className="detail-section-title">
+            Filmography
+            <span className="detail-section-count">{actress.dramas?.length || 0} dramas</span>
+          </h2>
+          <div className="detail-filmography-grid">
+            {(actress.dramas || []).map((drama, i) => (
+              <div key={i} className="detail-drama-card clickable" onClick={() => navigate(`/drama/${encodeURIComponent(drama.title)}`)}>
+                {drama.poster ? (
+                  <img
+                    className="detail-drama-poster"
+                    src={drama.poster}
+                    alt={drama.title}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                ) : (
+                  <div className="detail-drama-poster-placeholder">
+                    <span>{drama.title.charAt(0)}</span>
+                  </div>
+                )}
+                <div className="detail-drama-card-info">
+                  <span className="detail-drama-title">{drama.title}</span>
+                  <span className="detail-drama-year-badge">{drama.year}</span>
+                  {drama.role && <span className="detail-drama-role">as {drama.role}</span>}
+                </div>
+                <span className="drama-card-arrow">&#x2192;</span>
+              </div>
+            ))}
+          </div>
+          {(!actress.dramas || actress.dramas.length === 0) && (
+            <p className="detail-empty">No filmography data available.</p>
+          )}
+        </div>
+
+        {/* Awards Card - full width */}
+        <div className="detail-section full-width">
+          <h2 className="detail-section-title">
+            Awards & Recognition
+            <span className="detail-section-count">{actress.awards?.length || 0} awards</span>
+          </h2>
+          <div className="detail-awards">
+            {(actress.awards || []).map((award, i) => (
+              <div key={i} className="detail-award-item">
+                <span className="detail-award-icon">&#x1F3C6;</span>
+                <span className="detail-award-text">{award}</span>
+              </div>
+            ))}
+            {(!actress.awards || actress.awards.length === 0) && (
+              <p className="detail-empty">No awards data available.</p>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
