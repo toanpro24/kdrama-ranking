@@ -40,6 +40,14 @@ export async function resetData(): Promise<void> {
   await fetch(`${BASE}/reset`, { method: "POST" });
 }
 
+export async function updateWatchStatus(actressId: string, dramaTitle: string, watchStatus: string | null): Promise<void> {
+  await fetch(`${BASE}/actresses/${actressId}/dramas/${encodeURIComponent(dramaTitle)}/watch-status`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ watchStatus }),
+  });
+}
+
 export async function rateDrama(actressId: string, dramaTitle: string, rating: number | null): Promise<void> {
   await fetch(`${BASE}/actresses/${actressId}/dramas/${encodeURIComponent(dramaTitle)}/rating`, {
     method: "PATCH",

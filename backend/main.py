@@ -108,6 +108,31 @@ def rate_drama(actress_id: str, drama_title: str, body: dict):
     return {"actressId": actress_id, "drama": decoded, "rating": rating}
 
 
+# ── PATCH watchlist status for a drama ──
+@app.patch("/api/actresses/{actress_id}/dramas/{drama_title}/watch-status")
+def update_watch_status(actress_id: str, drama_title: str, body: dict):
+    import urllib.parse
+    decoded = urllib.parse.unquote(drama_title)
+    status = body.get("watchStatus")
+    valid = [None, "watched", "watching", "plan_to_watch", "dropped"]
+    if status not in valid:
+        raise HTTPException(status_code=400, detail=f"Status must be one of {valid}")
+    doc = actresses_collection.find_one({"_id": actress_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Actress not found")
+    dramas = doc.get("dramas", [])
+    found = False
+    for d in dramas:
+        if d["title"] == decoded:
+            d["watchStatus"] = status
+            found = True
+            break
+    if not found:
+        raise HTTPException(status_code=404, detail="Drama not found")
+    actresses_collection.update_one({"_id": actress_id}, {"$set": {"dramas": dramas}})
+    return {"actressId": actress_id, "drama": decoded, "watchStatus": status}
+
+
 # ── DELETE actress ──
 @app.delete("/api/actresses/{actress_id}")
 def delete_actress(actress_id: str):

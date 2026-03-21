@@ -469,6 +469,20 @@ body {
 .rating-value {
   font-size: 11px; font-weight: 700; color: #FFC53A; margin-left: 6px;
 }
+.watch-status-row {
+  display: flex; gap: 4px; padding: 6px 10px;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+.watch-btn {
+  padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 600;
+  border: 1px solid rgba(255,255,255,0.08); background: transparent; color: #555;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+}
+.watch-btn:hover { border-color: rgba(255,255,255,0.2); color: #999; }
+.watch-btn.active.ws-watched { background: rgba(58,217,160,0.15); color: #3AD9A0; border-color: #3AD9A033; }
+.watch-btn.active.ws-watching { background: rgba(58,141,255,0.15); color: #3A8FFF; border-color: #3A8FFF33; }
+.watch-btn.active.ws-plan_to_watch { background: rgba(255,197,58,0.15); color: #FFC53A; border-color: #FFC53A33; }
+.watch-btn.active.ws-dropped { background: rgba(255,41,66,0.15); color: #FF2942; border-color: #FF294233; }
 .detail-drama-poster {
   width: 100%; height: 200px; object-fit: cover; display: block;
 }

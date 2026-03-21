@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import type { Actress } from "./types";
-import { rateDrama } from "./api";
+import { rateDrama, updateWatchStatus } from "./api";
+import type { WatchStatus } from "./types";
 import "./index.css";
 
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
@@ -189,6 +190,24 @@ export default function ActressDetail() {
                     </span>
                   ))}
                   {drama.rating && <span className="rating-value">{drama.rating}/10</span>}
+                </div>
+                <div className="watch-status-row" onClick={(e) => e.stopPropagation()}>
+                  {(["watched", "watching", "plan_to_watch", "dropped"] as WatchStatus[]).map((ws) => (
+                    <button
+                      key={ws}
+                      className={`watch-btn ${drama.watchStatus === ws ? "active" : ""} ws-${ws}`}
+                      onClick={() => {
+                        const newStatus = drama.watchStatus === ws ? null : ws;
+                        updateWatchStatus(actress._id, drama.title, newStatus);
+                        setActress((prev) => {
+                          if (!prev) return prev;
+                          return { ...prev, dramas: prev.dramas.map((d, di) => di === i ? { ...d, watchStatus: newStatus } : d) };
+                        });
+                      }}
+                    >
+                      {ws === "watched" ? "Watched" : ws === "watching" ? "Watching" : ws === "plan_to_watch" ? "Plan" : "Dropped"}
+                    </button>
+                  ))}
                 </div>
                 <span className="drama-card-arrow" onClick={() => navigate(`/drama/${encodeURIComponent(drama.title)}`)}>&#x2192;</span>
               </div>

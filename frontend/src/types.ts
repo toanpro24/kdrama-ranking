@@ -1,9 +1,12 @@
+export type WatchStatus = "watched" | "watching" | "plan_to_watch" | "dropped" | null;
+
 export interface Drama {
   title: string;
   year: number;
   role: string;
   poster: string | null;
   rating: number | null;
+  watchStatus: WatchStatus;
 }
 
 export interface Actress {
