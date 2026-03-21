@@ -38,7 +38,7 @@ function ActressCard({
   const [hovered, setHovered] = useState(false);
   const [popupPos, setPopupPos] = useState<"below" | "above">("below");
   const cardRef = useRef<HTMLDivElement>(null);
-  const hoverTimeout = useRef<ReturnType<typeof setTimeout>>();
+  const hoverTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
   const navigate = useNavigate();
   const fallbackImg = `https://ui-avatars.com/api/?name=${encodeURIComponent(actress.name)}&size=200&background=1a1a2e&color=fff&bold=true`;
   const tier = actress.tier ? TIER_COLORS[actress.tier] : null;
