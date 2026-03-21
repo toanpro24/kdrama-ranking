@@ -128,7 +128,7 @@ body {
 /* ── Tiers ── */
 .tiers-section { display: flex; flex-direction: column; gap: 5px; }
 .tier-row {
-  display: flex; border-radius: 14px; overflow: hidden;
+  display: flex; border-radius: 14px; overflow: visible;
   background: rgba(255,255,255,0.015); border: 1px solid rgba(255,255,255,0.03);
   min-height: 76px; transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
   animation: fadeSlideUp 0.5s ease both;
@@ -188,7 +188,7 @@ body {
 /* ── Unranked Pool ── */
 .unranked-section {
   margin-top: 36px; border-radius: 18px; border: 1px solid rgba(255,255,255,0.03);
-  background: rgba(255,255,255,0.01); overflow: hidden; transition: all 0.3s ease;
+  background: rgba(255,255,255,0.01); overflow: visible; transition: all 0.3s ease;
 }
 .unranked-section.drag-over {
   border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.025);
