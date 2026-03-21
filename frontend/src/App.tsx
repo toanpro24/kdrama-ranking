@@ -149,6 +149,7 @@ export default function App() {
   const [tiersVisible, setTiersVisible] = useState(false);
   const [dragOverTier, setDragOverTier] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
+  const [sortBy, setSortBy] = useState<"default" | "name" | "year" | "genre">("default");
 
   const loadData = useCallback(async () => {
     const data = await fetchActresses();
@@ -183,12 +184,16 @@ export default function App() {
   const unranked = useMemo(() => actresses.filter((a) => !a.tier), [actresses]);
 
   const filteredUnranked = useMemo(() => {
-    return unranked.filter((a) => {
+    const filtered = unranked.filter((a) => {
       const matchSearch = !search || a.name.toLowerCase().includes(search.toLowerCase()) || a.known.toLowerCase().includes(search.toLowerCase());
       const matchGenre = genreFilter === "All" || a.genre === genreFilter;
       return matchSearch && matchGenre;
     });
-  }, [unranked, search, genreFilter]);
+    if (sortBy === "name") filtered.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sortBy === "year") filtered.sort((a, b) => b.year - a.year);
+    else if (sortBy === "genre") filtered.sort((a, b) => a.genre.localeCompare(b.genre));
+    return filtered;
+  }, [unranked, search, genreFilter, sortBy]);
 
   const computedStats = useMemo(() => {
     const ranked = actresses.filter((a) => a.tier).length;
@@ -374,6 +379,14 @@ export default function App() {
                 <div className="genre-pills">
                   {GENRES.map((g) => (
                     <button key={g} onClick={() => setGenreFilter(g)} className={`genre-pill ${genreFilter === g ? "active" : ""}`}>{g}</button>
+                  ))}
+                </div>
+                <div className="sort-pills">
+                  <span className="sort-label">Sort:</span>
+                  {(["default", "name", "year", "genre"] as const).map((s) => (
+                    <button key={s} onClick={() => setSortBy(s)} className={`sort-pill ${sortBy === s ? "active" : ""}`}>
+                      {s === "default" ? "Default" : s === "name" ? "A→Z" : s === "year" ? "Year ↓" : "Genre"}
+                    </button>
                   ))}
                 </div>
               </div>
