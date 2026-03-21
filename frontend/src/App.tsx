@@ -2,15 +2,15 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import html2canvas from "html2canvas";
 import type { Actress, Stats } from "./types";
-import { fetchActresses, createActress, updateTier, deleteActress, fetchStats, resetData } from "./api";
+import { createActress, updateTier, deleteActress, fetchStats, resetData } from "./api";
 import { TIERS, GENRES } from "./constants";
+import { useActresses } from "./ActressContext";
 import ActressCard from "./ActressCard";
 import "./index.css";
 
 export default function App() {
   const navigate = useNavigate();
-  const [actresses, setActresses] = useState<Actress[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { actresses, loading, setActresses, reload } = useActresses();
   const [search, setSearch] = useState("");
   const [genreFilter, setGenreFilter] = useState("All");
   const [showAdd, setShowAdd] = useState(false);
@@ -25,22 +25,15 @@ export default function App() {
   const [sortBy, setSortBy] = useState<"default" | "name" | "year" | "genre">("default");
   const tiersRef = useRef<HTMLElement>(null);
 
-  const loadData = useCallback(async () => {
-    const data = await fetchActresses();
-    setActresses(data);
-    setLoading(false);
-  }, []);
-
   const loadStats = useCallback(async () => {
     const data = await fetchStats();
     setStats(data);
   }, []);
 
   useEffect(() => {
-    loadData();
     setTimeout(() => setHeroVisible(true), 100);
     setTimeout(() => setTiersVisible(true), 500);
-  }, [loadData]);
+  }, []);
 
   useEffect(() => {
     if (activeTab === "stats") loadStats();
@@ -119,8 +112,8 @@ export default function App() {
 
   const handleReset = useCallback(async () => {
     await resetData();
-    await loadData();
-  }, [loadData]);
+    await reload();
+  }, [reload]);
 
   const handleShareTierList = useCallback(async () => {
     if (!tiersRef.current) return;

@@ -1,20 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Actress } from "./types";
-import { fetchActresses } from "./api";
 import { TIER_MAP } from "./constants";
+import { useActresses } from "./ActressContext";
 import ActressSelect from "./ActressSelect";
 import "./index.css";
 
 export default function Compare() {
   const navigate = useNavigate();
-  const [actresses, setActresses] = useState<Actress[]>([]);
+  const { actresses } = useActresses();
   const [leftId, setLeftId] = useState<string>("");
   const [rightId, setRightId] = useState<string>("");
-
-  useEffect(() => {
-    fetchActresses().then(setActresses);
-  }, []);
 
   const left = actresses.find((a) => a._id === leftId) || null;
   const right = actresses.find((a) => a._id === rightId) || null;

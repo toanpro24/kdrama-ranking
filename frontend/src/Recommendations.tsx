@@ -1,8 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Actress } from "./types";
-import { fetchActresses } from "./api";
 import { TIER_WEIGHT } from "./constants";
+import { useActresses } from "./ActressContext";
 import "./index.css";
 
 interface Recommendation {
@@ -16,12 +15,8 @@ interface Recommendation {
 
 export default function Recommendations() {
   const navigate = useNavigate();
-  const [actresses, setActresses] = useState<Actress[]>([]);
+  const { actresses } = useActresses();
   const [filter, setFilter] = useState<"all" | "unwatched" | "top">("all");
-
-  useEffect(() => {
-    fetchActresses().then(setActresses);
-  }, []);
 
   const { recommendations, watchedTitles, genreProfile } = useMemo(() => {
     const watched = new Set<string>();

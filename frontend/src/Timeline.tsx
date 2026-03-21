@@ -1,7 +1,6 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import type { Actress } from "./types";
-import { fetchActresses } from "./api";
+import { useActresses } from "./ActressContext";
 import ActressSelect from "./ActressSelect";
 import "./index.css";
 
@@ -14,12 +13,8 @@ interface TimelineDrama {
 
 export default function Timeline() {
   const navigate = useNavigate();
-  const [actresses, setActresses] = useState<Actress[]>([]);
+  const { actresses } = useActresses();
   const [filterActress, setFilterActress] = useState<string>("");
-
-  useEffect(() => {
-    fetchActresses().then(setActresses);
-  }, []);
 
   const dramasByYear = useMemo(() => {
     const map: Record<string, TimelineDrama> = {};
