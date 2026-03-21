@@ -616,6 +616,9 @@ body {
   border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04);
   color: #fff; font-size: 14px; font-family: 'DM Sans', sans-serif; outline: none;
 }
+.compare-select option {
+  background: #1a1a2e; color: #fff;
+}
 .compare-vs {
   font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700;
   color: #FF2942; text-shadow: 0 0 20px rgba(255,41,66,0.3);
