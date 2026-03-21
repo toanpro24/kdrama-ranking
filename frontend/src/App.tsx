@@ -233,7 +233,9 @@ export default function App() {
   const handleAddActress = useCallback(async () => {
     if (!newName.trim()) return;
     const created = await createActress({ name: newName.trim(), known: newKnown.trim() || "—", genre: newGenre, year: 2024 });
-    setActresses((prev) => [...prev, created]);
+    if (!created) return;
+    const actress: Actress = created;
+    setActresses((prev) => [...prev, actress]);
     setNewName("");
     setNewKnown("");
     setShowAdd(false);
