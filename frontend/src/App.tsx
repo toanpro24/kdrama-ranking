@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import html2canvas from "html2canvas";
 import type { Actress, Tier, Stats } from "./types";
 import { fetchActresses, createActress, updateTier, deleteActress, fetchStats, resetData } from "./api";
 import "./index.css";
@@ -150,6 +151,7 @@ export default function App() {
   const [dragOverTier, setDragOverTier] = useState<string | null>(null);
   const [stats, setStats] = useState<Stats | null>(null);
   const [sortBy, setSortBy] = useState<"default" | "name" | "year" | "genre">("default");
+  const tiersRef = useRef<HTMLElement>(null);
 
   const loadData = useCallback(async () => {
     const data = await fetchActresses();
@@ -246,6 +248,28 @@ export default function App() {
     await loadData();
   }, [loadData]);
 
+  const handleShareTierList = useCallback(async () => {
+    if (!tiersRef.current) return;
+    try {
+      const canvas = await html2canvas(tiersRef.current, {
+        backgroundColor: "#0a0a0f",
+        scale: 2,
+        useCORS: true,
+      });
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.download = "my-kdrama-tier-list.png";
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+      });
+    } catch (err) {
+      console.error("Screenshot failed:", err);
+    }
+  }, []);
+
   if (loading) return <div className="loading">Loading actresses...</div>;
 
   return (
@@ -299,6 +323,7 @@ export default function App() {
           ))}
         </div>
         <div className="nav-actions">
+          <button onClick={handleShareTierList} className="nav-btn share-btn">📷 Share Tier List</button>
           <button onClick={handleReset} className="nav-btn">↺ Reset</button>
           <button onClick={() => setShowAdd(!showAdd)} className="nav-btn primary">{showAdd ? "✕ Close" : "+ Add Actress"}</button>
         </div>
@@ -333,7 +358,7 @@ export default function App() {
       {/* Tier List Tab */}
       {activeTab === "tierlist" && (
         <main className="main-content" style={{ opacity: tiersVisible ? 1 : 0, transform: tiersVisible ? "none" : "translateY(20px)", transition: "all 0.6s ease" }}>
-          <section className="tiers-section">
+          <section className="tiers-section" ref={tiersRef}>
             {tiers.map((tier, i) => (
               <div
                 key={tier.id}

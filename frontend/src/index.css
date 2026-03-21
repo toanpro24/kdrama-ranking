@@ -99,6 +99,8 @@ body {
 .nav-btn.primary {
   background: linear-gradient(135deg, #FF2942, #FF4655); color: #fff; border: none;
 }
+.nav-btn.share-btn { border-color: rgba(58,141,255,0.3); color: #3A8FFF; }
+.nav-btn.share-btn:hover { background: rgba(58,141,255,0.1); }
 
 /* ── Add Panel ── */
 .add-panel {
