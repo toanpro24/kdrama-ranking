@@ -136,6 +136,7 @@ function ActressCard({
 }
 
 export default function App() {
+  const navigate = useNavigate();
   const [actresses, setActresses] = useState<Actress[]>([]);
   const [loading, setLoading] = useState(true);
   const [tiers] = useState<Tier[]>(DEFAULT_TIERS);
