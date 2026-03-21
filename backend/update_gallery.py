@@ -1,42 +1,197 @@
 """Update gallery images for all actresses from Wikimedia Commons."""
+import hashlib
+import urllib.parse
 from database import actresses_collection
 
-GALLERY = {
+
+def wiki_thumb(filename: str, width: int = 400) -> str:
+    """Convert a Wikimedia Commons filename to a direct thumbnail URL."""
+    # Decode percent-encoded filename, replace spaces with underscores
+    name = urllib.parse.unquote(filename).replace(" ", "_")
+    md5 = hashlib.md5(name.encode("utf-8")).hexdigest()
+    ext = name.rsplit(".", 1)[-1].lower()
+    # SVG thumbnails are served as PNG
+    suffix = f"{width}px-{name}" if ext != "svg" else f"{width}px-{name}.png"
+    return (
+        f"https://upload.wikimedia.org/wikipedia/commons/thumb/"
+        f"{md5[0]}/{md5[:2]}/{urllib.parse.quote(name)}/{suffix}"
+    )
+
+
+# Raw filenames (decoded) for each actress – will be converted to direct URLs
+_GALLERY_FILES: dict[str, list[str]] = {
     "1": [],
-    "2": ["https://commons.wikimedia.org/w/thumb.php?f=191112_%EC%A0%84%EC%A7%80%ED%98%84_%282%29.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=20250902_Jun_Ji-hyun_%28%EC%A0%84%EC%A7%80%ED%98%84%29.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=JiHyun2009%28cropped%29.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=%EB%84%A4%ED%8C%8C_%EB%94%B0%EB%9C%BB%ED%95%9C_%EC%84%B8%EC%83%81_%EC%BA%A0%ED%8E%98%EC%9D%B8_%EC%A0%84%EC%A7%80%ED%98%84_%ED%99%8D%EB%B3%B4%EB%8C%80%EC%82%AC_%EC%9C%84%EC%B4%89%EC%8B%9D.jpg&w=400"],
-    "3": ["https://commons.wikimedia.org/w/thumb.php?f=%28Marie_Claire_Korea%29_THE_Princess_with_Song_Hye_Kyo_%284%29.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Song_Hye-kyo.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Song_Hye-kyo_%EC%86%A1%ED%98%9C%EA%B5%90_2022.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Song_Hye_Kyo_2025_%EC%86%A1%ED%98%9C%EA%B5%90_04.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=%EC%86%A1%ED%98%9C%EA%B5%90%2C_%E2%80%9C%EB%B4%84%EC%9D%84_%EB%8B%AE%EC%9D%80_%EB%AF%B8%EC%86%8C%E2%80%9C_%281%29.jpg&w=400"],
-    "4": ["https://commons.wikimedia.org/w/thumb.php?f=%28160204%29_Park_Shin_Hye_%40_the_%27DongJu_-_The_Portrait_of_A_Poet%27_Movie_Premiere.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=120119_%EC%84%9C%EC%9A%B8%EA%B0%80%EC%9A%94%EB%8C%80%EC%83%81-%EB%B0%95%EC%8B%A0%ED%98%9C.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Park_Shin-hye_from_acrofan.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Park_Shin-hye_in_April_2025.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Park_Shin-hye_in_November_2024.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Park_Shin-hye_in_September_2024_02.png&w=400"],
-    "5": ["https://commons.wikimedia.org/w/thumb.php?f=180503_%EC%88%98%EC%A7%80_01.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=20241128_Bae_Suzy_CELINE_photocall_%28cropped%29.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Bae_Suzy_at_OB_Beer_Hanmac_%27As_Smooth_As_Possible%27_campaign%2C_3_April_2024_06.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Suzy_at_the_press_conference_for_Architecture_101_181.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Suzy_departing_from_Incheon_Airport%2C_26_March_2025_01.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Suzy_with_her_wax_figure%2C_Madame_Tussauds_Hong_Kong%2C_13_September_2016_02.jpg&w=400"],
+    "2": [
+        "191112_전지현_(2).jpg",
+        "20250902_Jun_Ji-hyun_(전지현).png",
+        "JiHyun2009(cropped).jpg",
+        "네파_따뜻한_세상_캠페인_전지현_홍보대사_위촉식.jpg",
+    ],
+    "3": [
+        "(Marie_Claire_Korea)_THE_Princess_with_Song_Hye_Kyo_(4).jpg",
+        "Song_Hye-kyo.jpg",
+        "Song_Hye-kyo_송혜교_2022.jpg",
+        "Song_Hye_Kyo_2025_송혜교_04.jpg",
+        '송혜교,_\u201c봄을_닮은_미소\u201c_(1).jpg',
+    ],
+    "4": [
+        "(160204)_Park_Shin_Hye_@_the_'DongJu_-_The_Portrait_of_A_Poet'_Movie_Premiere.jpg",
+        "120119_서울가요대상-박신혜.jpg",
+        "Park_Shin-hye_from_acrofan.jpg",
+        "Park_Shin-hye_in_April_2025.png",
+        "Park_Shin-hye_in_November_2024.png",
+        "Park_Shin-hye_in_September_2024_02.png",
+    ],
+    "5": [
+        "180503_수지_01.jpg",
+        "20241128_Bae_Suzy_CELINE_photocall_(cropped).jpg",
+        "Bae_Suzy_at_OB_Beer_Hanmac_'As_Smooth_As_Possible'_campaign,_3_April_2024_06.jpg",
+        "Suzy_at_the_press_conference_for_Architecture_101_181.jpg",
+        "Suzy_departing_from_Incheon_Airport,_26_March_2025_01.png",
+        "Suzy_with_her_wax_figure,_Madame_Tussauds_Hong_Kong,_13_September_2016_02.jpg",
+    ],
     "6": [],
-    "7": ["https://commons.wikimedia.org/w/thumb.php?f=15.01.24_%EC%9D%8C%EC%95%85%EC%A4%91%EC%8B%AC_%EA%B9%80%EC%86%8C%ED%98%84_%ED%87%B4%EA%B7%BC%EA%B8%B8_02.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=160924_SOUP_%EA%B9%80%EC%86%8C%ED%98%84_02.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=161231_KBS%EC%97%B0%EA%B8%B0%EB%8C%80%EC%83%81_%EA%B9%80%EC%86%8C%ED%98%84_%EC%A7%81%EC%B0%8D_%281%29.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=171207_%EA%B9%80%EC%86%8C%ED%98%84_01.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Kim_So-hyun.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Kim_So-hyun_Airport_Departure_February_2025.png&w=400"],
-    "8": ["https://commons.wikimedia.org/w/thumb.php?f=160329_%EC%98%81%ED%99%94_%EC%BB%A4%ED%84%B0_VIP_%EC%8B%9C%EC%82%AC%ED%9A%8C_06.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=20250319_Moon_Ga-young_at_a_photo_call_event_02.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=210609_Moon_Ga-young_with_Marie_Claire_Korea_02.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Moon_Gayoung_at_Dolce%26Gabbana_photocall%2C_24_October_2024_01.png&w=400"],
-    "9": ["https://commons.wikimedia.org/w/thumb.php?f=2017_%EC%95%84%EC%8B%9C%EC%95%84_%EB%AA%A8%EB%8D%B8_%ED%8E%98%EC%8A%A4%ED%8B%B0%EB%B2%8C_%EB%A0%88%EB%93%9C%EC%B9%B4%ED%8E%AB_%2826%29_%28cropped%29.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=20241108_Han_Sohee_for_BOUCHERON_05.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Han_So-Hee_at_the_2025_Toronto_International_Film_Festival_%28cropped%29.jpg&w=400"],
+    "7": [
+        "15.01.24_음악중심_김소현_퇴근길_02.jpg",
+        "160924_SOUP_김소현_02.jpg",
+        "161231_KBS연기대상_김소현_직찍_(1).jpg",
+        "171207_김소현_01.jpg",
+        "Kim_So-hyun.jpg",
+        "Kim_So-hyun_Airport_Departure_February_2025.png",
+    ],
+    "8": [
+        "160329_영화_커터_VIP_시사회_06.jpg",
+        "20250319_Moon_Ga-young_at_a_photo_call_event_02.jpg",
+        "210609_Moon_Ga-young_with_Marie_Claire_Korea_02.png",
+        "Moon_Gayoung_at_Dolce&Gabbana_photocall,_24_October_2024_01.png",
+    ],
+    "9": [
+        "2017_아시아_모델_페스티벌_레드카펫_(26)_(cropped).jpg",
+        "20241108_Han_Sohee_for_BOUCHERON_05.jpg",
+        "Han_So-Hee_at_the_2025_Toronto_International_Film_Festival_(cropped).jpg",
+    ],
     "10": [],
-    "11": ["https://commons.wikimedia.org/w/thumb.php?f=LG_XNOTE_P430_TV%EA%B4%91%EA%B3%A0_%EC%82%AC%EC%A7%84_-_%EC%8B%A0%EB%AF%BC%EC%95%84_%26_%EC%86%A1%EC%A4%91%EA%B8%B0_%2824%29.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Shin_Min-a_for_Marie_Claire_Korea_December_2018.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Shin_Min-a_in_August_2022.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Shin_Min-a_in_September_2024.png&w=400"],
-    "12": ["https://commons.wikimedia.org/w/thumb.php?f=140717_Son_Ye-jin_and_Hyun_Bin_at_18th_Puchon_International_Fantastic_Film_Festival_%28cropped%29.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=181018_%EC%86%90%EC%98%88%EC%A7%84_04_%28cropped%29.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Son_Ye-jin.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Son_Ye-jin_in_March_2024.png&w=400"],
-    "13": ["https://commons.wikimedia.org/w/thumb.php?f=161125_%EC%A0%9C37%ED%9A%8C_%EC%B2%AD%EB%A3%A1%EC%98%81%ED%99%94%EC%83%81_%EC%8B%A0%EC%9D%B8%EC%97%AC%EC%9A%B0%EC%83%81_%EC%88%98%EC%83%81_%EA%B9%80%ED%83%9C%EB%A6%AC_%EC%A7%81%EC%B0%8D_%281%29.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Kim_Tae-ri_PRADA_BEAUTY_Photo_call_August_2024.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Kim_Taeri_%28%EA%B9%80%ED%83%9C%EB%A6%AC%29_in_July_2023_03.png&w=400"],
+    "11": [
+        "LG_XNOTE_P430_TV광고_사진_-_신민아_&_송중기_(24).jpg",
+        "Shin_Min-a_for_Marie_Claire_Korea_December_2018.jpg",
+        "Shin_Min-a_in_August_2022.jpg",
+        "Shin_Min-a_in_September_2024.png",
+    ],
+    "12": [
+        "140717_Son_Ye-jin_and_Hyun_Bin_at_18th_Puchon_International_Fantastic_Film_Festival_(cropped).jpg",
+        "181018_손예진_04_(cropped).jpg",
+        "Son_Ye-jin.png",
+        "Son_Ye-jin_in_March_2024.png",
+    ],
+    "13": [
+        "161125_제37회_청룡영화상_신인여우상_수상_김태리_직찍_(1).jpg",
+        "Kim_Tae-ri_PRADA_BEAUTY_Photo_call_August_2024.png",
+        "Kim_Taeri_(김태리)_in_July_2023_03.png",
+    ],
     "14": [],
-    "15": ["https://commons.wikimedia.org/w/thumb.php?f=Lim_Ji-yeon_at_The_Glory_press_conference_on_201222_%281%29.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Lim_Ji-yeon_in_October_2025.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Lim_Jiyeon_in_2019.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Lim_Jiyeon_press_conference_The_Tale_of_Lady_Ok_2024.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Lim_in_2015.png&w=400"],
-    "16": ["https://commons.wikimedia.org/w/thumb.php?f=Go_Min-si_2021.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=%EA%B3%A0%EB%AF%BC%EC%8B%9C%EC%99%80_%ED%95%A8%EA%BB%98%ED%95%9C_%EB%B7%B0%ED%8B%B0%ED%99%94%EB%B3%B4_01.png&w=400"],
-    "17": ["https://commons.wikimedia.org/w/thumb.php?f=151003_%EB%B6%80%EC%82%B0%EA%B5%AD%EC%A0%9C%EC%98%81%ED%99%94%EC%A0%9C_%EB%8F%8C%EC%97%B0%EB%B3%80%EC%9D%B4_%EC%95%BC%EC%99%B8_%EB%AC%B4%EB%8C%80%EC%9D%B8%EC%82%AC_%28Park_Bo-young%29.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=189429_%EB%B0%95%EB%B3%B4%EC%98%81_%282%29.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Park_Bo-young_from_acrofan.jpg&w=400"],
+    "15": [
+        "Lim_Ji-yeon_at_The_Glory_press_conference_on_201222_(1).png",
+        "Lim_Ji-yeon_in_October_2025.png",
+        "Lim_Jiyeon_in_2019.png",
+        "Lim_Jiyeon_press_conference_The_Tale_of_Lady_Ok_2024.png",
+        "Lim_in_2015.png",
+    ],
+    "16": [
+        "Go_Min-si_2021.png",
+        "고민시와_함께한_뷰티화보_01.png",
+    ],
+    "17": [
+        "151003_부산국제영화제_돌연변이_야외_무대인사_(Park_Bo-young).jpg",
+        "189429_박보영_(2).jpg",
+        "Park_Bo-young_from_acrofan.jpg",
+    ],
     "18": [],
     "19": [],
-    "20": ["https://commons.wikimedia.org/w/thumb.php?f=160904_%ED%8F%89%EC%B4%8C%EA%B1%B7%EA%B8%B0%EC%B6%95%EC%A0%9C_%EA%B5%AC%EA%B5%AC%EB%8B%A8_%EC%84%B8%EC%A0%95_%EC%A7%81%EC%B0%8D_%EC%97%85%EB%A1%9C%EB%93%9C_%283%29.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=189429_%27%ED%81%AC%EB%A1%9D%EC%8A%A4_%EB%B0%94%EC%9D%B4%EB%B8%8C%27_%EC%9D%B4%EB%B2%A4%ED%8A%B8_%ED%99%8D%EB%B3%B4%EB%8C%80%EC%82%AC_%EC%84%B8%EC%A0%95_%285%29.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=20220226_Kim_Se-jeong_%EA%B9%80%EC%84%B8%EC%A0%95_for_Marie_Claire_Korea.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Gugudan_Sejeong.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Kim_Sejeong_in_June_2025.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Sejeong_on_SBS_Radio_on_March_19%2C_2020_%284%29.jpg&w=400"],
-    "21": ["https://commons.wikimedia.org/w/thumb.php?f=20250625_Park_Min-young_TAG_Heuer_PhotoCall.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Park_Min-young_May_2018.png&w=400"],
-    "22": ["https://commons.wikimedia.org/w/thumb.php?f=171231_2017_KBS%EC%97%B0%EA%B8%B0%EB%8C%80%EC%83%81_%EB%A0%88%EB%93%9C%EC%B9%B4%ED%8E%AB_%EC%8B%A0%ED%98%9C%EC%84%A0.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Shin_Hye-sun_in_April_2024.png&w=400"],
-    "23": ["https://commons.wikimedia.org/w/thumb.php?f=Kim_Go-eun_at_the_2024_Toronto_International_Film_Festival_2.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Kim_Go-eun_in_2020_6.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Kim_Ko-Eun.jpg&w=400"],
-    "24": ["https://commons.wikimedia.org/w/thumb.php?f=Lee_Sung-kyung_in_March_2025.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Lee_Sung-kyung_on_October_18%2C_2019_at_Jimmy_Choo_event_02.jpg&w=400"],
-    "25": ["https://commons.wikimedia.org/w/thumb.php?f=Jung_So-min_at_the_press_conference_of_SBS_Bad_Guy.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Jung_So-min_in_March_2025.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Jung_So-min_in_October_2024.png&w=400"],
-    "26": ["https://commons.wikimedia.org/w/thumb.php?f=Chun_Woo-hee_in_July_2024_02.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=%EC%B2%9C%EC%9A%B0%ED%9D%AC_at_BIFF_2013.jpg&w=400"],
-    "27": ["https://commons.wikimedia.org/w/thumb.php?f=Lee_Se-young_at_Incheon_International_Airport_on_28022025_%282%29.jpg&w=400"],
-    "28": ["https://commons.wikimedia.org/w/thumb.php?f=Moon_Chae-won_at_The_Princess%27_Man_poster_shooting_163.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Moon_Chae-won_in_2024_-_1.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=%EC%A0%9C19%ED%9A%8C_%EB%B6%80%EC%B2%9C%EA%B5%AD%EC%A0%9C%ED%8C%90%ED%83%80%EC%8A%A4%ED%8B%B1%EC%98%81%ED%99%94%EC%A0%9C_%EB%A0%88%EB%93%9C%EC%B9%B4%ED%8E%AB_part.3_16.jpg&w=400"],
-    "29": ["https://commons.wikimedia.org/w/thumb.php?f=20240410_Kim_Da-mi_%28%EA%B9%80%EB%8B%A4%EB%AF%B8%29.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Kim_Dami_20180830.jpg&w=400"],
-    "30": ["https://commons.wikimedia.org/w/thumb.php?f=Hwang_Jung-Eum_in_2009_%282%29.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Hwang_Jung-eum_in_June_2017.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Hwang_Jung-eum_in_March_2024.png&w=400"],
-    "31": ["https://commons.wikimedia.org/w/thumb.php?f=20250820_Kim_Hye_Yoon_%28%EA%B9%80%ED%98%9C%EC%9C%A4%29.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Kim_Hye-yoon_%EA%B9%80%ED%98%9C%EC%9C%A4_2022.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Kim_hye_yoon_2019_10_02.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=%EA%B9%80%ED%98%9C%EC%9C%A4_Airport_Departure_06082024.jpg&w=400"],
-    "32": ["https://commons.wikimedia.org/w/thumb.php?f=492d5bec01aecbbeffbb66aa8b3681a2--brunettes-lee-bo-young.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Choi_Ki-Hwan_and_Lee_Bo-Young_%28cropped%29.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Lee_Bo-Young.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Lee_Bo-young_in_March_2024.png&w=400"],
-    "33": ["https://commons.wikimedia.org/w/thumb.php?f=Gong_Hyo-jin_at_%22The_Producers%22_press_conference_%28May_2015%29.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Gong_Hyo-jin_in_October_2024.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Kong_Hyo-Jin.jpg&w=400"],
-    "34": ["https://commons.wikimedia.org/w/thumb.php?f=Ha_Ji-Won_in_2009.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Ha_Ji-won_at_the_premiere_of_Miracle_on_1st_Street_116.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Ha_Ji-won_in_September_2025.png&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Ha_Ji-won_on_26_July_2011_%284%29.jpg&w=400"],
-    "35": ["https://commons.wikimedia.org/w/thumb.php?f=191025_%EC%9E%A5%EB%82%98%EB%9D%BC.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Jang_Na-ra_in_July_2017.jpg&w=400", "https://commons.wikimedia.org/w/thumb.php?f=Jang_Na-ra_in_July_2024.png&w=400"],
+    "20": [
+        "160904_평촌걷기축제_구구단_세정_직찍_업로드_(3).jpg",
+        "189429_'크록스_바이브'_이벤트_홍보대사_세정_(5).jpg",
+        "20220226_Kim_Se-jeong_김세정_for_Marie_Claire_Korea.jpg",
+        "Gugudan_Sejeong.png",
+        "Kim_Sejeong_in_June_2025.png",
+        "Sejeong_on_SBS_Radio_on_March_19,_2020_(4).jpg",
+    ],
+    "21": [
+        "20250625_Park_Min-young_TAG_Heuer_PhotoCall.jpg",
+        "Park_Min-young_May_2018.png",
+    ],
+    "22": [
+        "171231_2017_KBS연기대상_레드카펫_신혜선.jpg",
+        "Shin_Hye-sun_in_April_2024.png",
+    ],
+    "23": [
+        "Kim_Go-eun_at_the_2024_Toronto_International_Film_Festival_2.jpg",
+        "Kim_Go-eun_in_2020_6.png",
+        "Kim_Ko-Eun.jpg",
+    ],
+    "24": [
+        "Lee_Sung-kyung_in_March_2025.png",
+        "Lee_Sung-kyung_on_October_18,_2019_at_Jimmy_Choo_event_02.jpg",
+    ],
+    "25": [
+        "Jung_So-min_at_the_press_conference_of_SBS_Bad_Guy.jpg",
+        "Jung_So-min_in_March_2025.png",
+        "Jung_So-min_in_October_2024.png",
+    ],
+    "26": [
+        "Chun_Woo-hee_in_July_2024_02.jpg",
+        "천우희_at_BIFF_2013.jpg",
+    ],
+    "27": [
+        "Lee_Se-young_at_Incheon_International_Airport_on_28022025_(2).jpg",
+    ],
+    "28": [
+        "Moon_Chae-won_at_The_Princess'_Man_poster_shooting_163.jpg",
+        "Moon_Chae-won_in_2024_-_1.png",
+        "제19회_부천국제판타스틱영화제_레드카펫_part.3_16.jpg",
+    ],
+    "29": [
+        "20240410_Kim_Da-mi_(김다미).jpg",
+        "Kim_Dami_20180830.jpg",
+    ],
+    "30": [
+        "Hwang_Jung-Eum_in_2009_(2).jpg",
+        "Hwang_Jung-eum_in_June_2017.jpg",
+        "Hwang_Jung-eum_in_March_2024.png",
+    ],
+    "31": [
+        "20250820_Kim_Hye_Yoon_(김혜윤).png",
+        "Kim_Hye-yoon_김혜윤_2022.jpg",
+        "Kim_hye_yoon_2019_10_02.jpg",
+        "김혜윤_Airport_Departure_06082024.jpg",
+    ],
+    "32": [
+        "492d5bec01aecbbeffbb66aa8b3681a2--brunettes-lee-bo-young.jpg",
+        "Choi_Ki-Hwan_and_Lee_Bo-Young_(cropped).jpg",
+        "Lee_Bo-Young.jpg",
+        "Lee_Bo-young_in_March_2024.png",
+    ],
+    "33": [
+        'Gong_Hyo-jin_at_"The_Producers"_press_conference_(May_2015).jpg',
+        "Gong_Hyo-jin_in_October_2024.png",
+        "Kong_Hyo-Jin.jpg",
+    ],
+    "34": [
+        "Ha_Ji-Won_in_2009.jpg",
+        "Ha_Ji-won_at_the_premiere_of_Miracle_on_1st_Street_116.jpg",
+        "Ha_Ji-won_in_September_2025.png",
+        "Ha_Ji-won_on_26_July_2011_(4).jpg",
+    ],
+    "35": [
+        "191025_장나라.jpg",
+        "Jang_Na-ra_in_July_2017.jpg",
+        "Jang_Na-ra_in_July_2024.png",
+    ],
+}
+
+# Build the final gallery with proper direct URLs
+GALLERY = {
+    aid: [wiki_thumb(f) for f in files]
+    for aid, files in _GALLERY_FILES.items()
 }
 
 
