@@ -48,7 +48,7 @@ export default function DramaDetail() {
       {lightbox && (
         <div className="lightbox" onClick={() => setLightbox(null)}>
           <button className="lightbox-close" onClick={() => setLightbox(null)}>&#x2715;</button>
-          <img src={lightbox} alt="Full size" className="lightbox-img" onClick={(e) => e.stopPropagation()} />
+          <img src={lightbox} alt="Full size" className="lightbox-img" referrerPolicy="no-referrer" onClick={(e) => e.stopPropagation()} />
         </div>
       )}
 
@@ -63,6 +63,7 @@ export default function DramaDetail() {
             className="drama-detail-poster"
             src={drama.poster || fallbackPoster}
             alt={drama.title}
+            referrerPolicy="no-referrer"
             onClick={() => drama.poster && setLightbox(drama.poster)}
             onError={(e) => { (e.target as HTMLImageElement).src = fallbackPoster; }}
           />

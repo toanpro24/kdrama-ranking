@@ -86,6 +86,7 @@ function ActressCard({
           className="card-avatar"
           src={actress.image || fallbackImg}
           alt={actress.name}
+          referrerPolicy="no-referrer"
           onError={(e) => { (e.target as HTMLImageElement).src = fallbackImg; }}
         />
         <div className="card-body">
@@ -102,6 +103,7 @@ function ActressCard({
             className="popup-image"
             src={actress.image || fallbackImg}
             alt={actress.name}
+            referrerPolicy="no-referrer"
             onError={(e) => { (e.target as HTMLImageElement).src = fallbackImg; }}
           />
           <div className="popup-info">

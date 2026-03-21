@@ -48,7 +48,7 @@ export default function ActressDetail() {
       {lightbox && (
         <div className="lightbox" onClick={() => setLightbox(null)}>
           <button className="lightbox-close" onClick={() => setLightbox(null)}>✕</button>
-          <img src={lightbox} alt="Full size" className="lightbox-img" onClick={(e) => e.stopPropagation()} />
+          <img src={lightbox} alt="Full size" className="lightbox-img" referrerPolicy="no-referrer" onClick={(e) => e.stopPropagation()} />
         </div>
       )}
 
@@ -63,6 +63,7 @@ export default function ActressDetail() {
             className="detail-portrait"
             src={actress.image || fallbackImg}
             alt={actress.name}
+            referrerPolicy="no-referrer"
             onClick={() => setLightbox(actress.image || fallbackImg)}
             onError={(e) => { (e.target as HTMLImageElement).src = fallbackImg; }}
           />
@@ -130,6 +131,7 @@ export default function ActressDetail() {
                 className="detail-gallery-img"
                 src={img}
                 alt={`${actress.name} photo ${i + 1}`}
+                referrerPolicy="no-referrer"
                 onClick={() => setLightbox(img)}
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
@@ -152,6 +154,7 @@ export default function ActressDetail() {
                     className="detail-drama-poster"
                     src={drama.poster}
                     alt={drama.title}
+                    referrerPolicy="no-referrer"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                   />
                 ) : (
