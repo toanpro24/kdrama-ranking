@@ -323,6 +323,7 @@ export default function App() {
           ))}
           <button onClick={() => navigate("/compare")} className="nav-tab">⚔ Compare</button>
           <button onClick={() => navigate("/timeline")} className="nav-tab">📅 Timeline</button>
+          <button onClick={() => navigate("/recommendations")} className="nav-tab">💡 For You</button>
         </div>
         <div className="nav-actions">
           <button onClick={handleShareTierList} className="nav-btn share-btn">📷 Share Tier List</button>
