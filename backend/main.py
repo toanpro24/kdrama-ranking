@@ -84,6 +84,30 @@ def bulk_update_tiers(updates: list[dict]):
     return {"updated": len(updates)}
 
 
+# ── PATCH rate a drama ──
+@app.patch("/api/actresses/{actress_id}/dramas/{drama_title}/rating")
+def rate_drama(actress_id: str, drama_title: str, body: dict):
+    import urllib.parse
+    decoded = urllib.parse.unquote(drama_title)
+    rating = body.get("rating")
+    if rating is not None and (rating < 1 or rating > 10):
+        raise HTTPException(status_code=400, detail="Rating must be 1-10")
+    doc = actresses_collection.find_one({"_id": actress_id})
+    if not doc:
+        raise HTTPException(status_code=404, detail="Actress not found")
+    dramas = doc.get("dramas", [])
+    found = False
+    for d in dramas:
+        if d["title"] == decoded:
+            d["rating"] = rating
+            found = True
+            break
+    if not found:
+        raise HTTPException(status_code=404, detail="Drama not found")
+    actresses_collection.update_one({"_id": actress_id}, {"$set": {"dramas": dramas}})
+    return {"actressId": actress_id, "drama": decoded, "rating": rating}
+
+
 # ── DELETE actress ──
 @app.delete("/api/actresses/{actress_id}")
 def delete_actress(actress_id: str):

@@ -3,6 +3,7 @@ export interface Drama {
   year: number;
   role: string;
   poster: string | null;
+  rating: number | null;
 }
 
 export interface Actress {

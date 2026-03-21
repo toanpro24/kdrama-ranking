@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import type { Actress } from "./types";
+import { rateDrama } from "./api";
 import "./index.css";
 
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
@@ -148,26 +149,48 @@ export default function ActressDetail() {
           </h2>
           <div className="detail-filmography-grid">
             {(actress.dramas || []).map((drama, i) => (
-              <div key={i} className="detail-drama-card clickable" onClick={() => navigate(`/drama/${encodeURIComponent(drama.title)}`)}>
-                {drama.poster ? (
-                  <img
-                    className="detail-drama-poster"
-                    src={drama.poster}
-                    alt={drama.title}
-                    referrerPolicy="no-referrer"
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                  />
-                ) : (
-                  <div className="detail-drama-poster-placeholder">
-                    <span>{drama.title.charAt(0)}</span>
+              <div key={i} className="detail-drama-card clickable">
+                <div onClick={() => navigate(`/drama/${encodeURIComponent(drama.title)}`)}>
+                  {drama.poster ? (
+                    <img
+                      className="detail-drama-poster"
+                      src={drama.poster}
+                      alt={drama.title}
+                      referrerPolicy="no-referrer"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                    />
+                  ) : (
+                    <div className="detail-drama-poster-placeholder">
+                      <span>{drama.title.charAt(0)}</span>
+                    </div>
+                  )}
+                  <div className="detail-drama-card-info">
+                    <span className="detail-drama-title">{drama.title}</span>
+                    <span className="detail-drama-year-badge">{drama.year}</span>
+                    {drama.role && <span className="detail-drama-role">as {drama.role}</span>}
                   </div>
-                )}
-                <div className="detail-drama-card-info">
-                  <span className="detail-drama-title">{drama.title}</span>
-                  <span className="detail-drama-year-badge">{drama.year}</span>
-                  {drama.role && <span className="detail-drama-role">as {drama.role}</span>}
                 </div>
-                <span className="drama-card-arrow">&#x2192;</span>
+                <div className="drama-rating" onClick={(e) => e.stopPropagation()}>
+                  {[...Array(10)].map((_, s) => (
+                    <span
+                      key={s}
+                      className={`rating-star ${(drama.rating || 0) > s ? "filled" : ""}`}
+                      onClick={() => {
+                        const newRating = s + 1 === drama.rating ? null : s + 1;
+                        rateDrama(actress._id, drama.title, newRating);
+                        setActress((prev) => {
+                          if (!prev) return prev;
+                          const updated = { ...prev, dramas: prev.dramas.map((d, di) => di === i ? { ...d, rating: newRating } : d) };
+                          return updated;
+                        });
+                      }}
+                    >
+                      ★
+                    </span>
+                  ))}
+                  {drama.rating && <span className="rating-value">{drama.rating}/10</span>}
+                </div>
+                <span className="drama-card-arrow" onClick={() => navigate(`/drama/${encodeURIComponent(drama.title)}`)}>&#x2192;</span>
               </div>
             ))}
           </div>
