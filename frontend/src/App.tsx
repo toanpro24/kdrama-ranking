@@ -321,6 +321,8 @@ export default function App() {
           {[["tierlist", "⚡ Tier List"], ["stats", "📊 Stats"]].map(([key, label]) => (
             <button key={key} onClick={() => setActiveTab(key)} className={`nav-tab ${activeTab === key ? "active" : ""}`}>{label}</button>
           ))}
+          <button onClick={() => navigate("/compare")} className="nav-tab">⚔ Compare</button>
+          <button onClick={() => navigate("/timeline")} className="nav-tab">📅 Timeline</button>
         </div>
         <div className="nav-actions">
           <button onClick={handleShareTierList} className="nav-btn share-btn">📷 Share Tier List</button>
