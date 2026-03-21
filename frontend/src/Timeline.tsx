@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Actress } from "./types";
 import { fetchActresses } from "./api";
+import ActressSelect from "./ActressSelect";
 import "./index.css";
 
 interface TimelineDrama {
@@ -54,17 +55,13 @@ export default function Timeline() {
       <h1 className="timeline-title">Drama Timeline</h1>
 
       <div className="timeline-filters">
-        <select
-          className="compare-select"
+        <ActressSelect
+          actresses={actresses}
           value={filterActress}
-          onChange={(e) => setFilterActress(e.target.value)}
-          style={{ maxWidth: 300 }}
-        >
-          <option value="">All actresses</option>
-          {actresses.map((a) => (
-            <option key={a._id} value={a._id}>{a.name}</option>
-          ))}
-        </select>
+          onChange={setFilterActress}
+          placeholder="All actresses"
+          maxWidth={300}
+        />
       </div>
 
       <div className="timeline-container">

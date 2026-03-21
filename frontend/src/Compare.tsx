@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Actress } from "./types";
 import { fetchActresses } from "./api";
+import ActressSelect from "./ActressSelect";
 import "./index.css";
 
 const TIER_INFO: Record<string, { label: string; color: string }> = {
@@ -98,19 +99,21 @@ export default function Compare() {
       <button className="detail-back" onClick={() => navigate(-1)}>&#x2190; Back</button>
       <h1 className="compare-title">Compare Actresses</h1>
       <div className="compare-selectors">
-        <select className="compare-select" value={leftId} onChange={(e) => setLeftId(e.target.value)}>
-          <option value="">Select actress...</option>
-          {actresses.map((a) => (
-            <option key={a._id} value={a._id} disabled={a._id === rightId}>{a.name}</option>
-          ))}
-        </select>
+        <ActressSelect
+          actresses={actresses}
+          value={leftId}
+          onChange={setLeftId}
+          disabledId={rightId}
+          placeholder="Select actress..."
+        />
         <span className="compare-vs">VS</span>
-        <select className="compare-select" value={rightId} onChange={(e) => setRightId(e.target.value)}>
-          <option value="">Select actress...</option>
-          {actresses.map((a) => (
-            <option key={a._id} value={a._id} disabled={a._id === leftId}>{a.name}</option>
-          ))}
-        </select>
+        <ActressSelect
+          actresses={actresses}
+          value={rightId}
+          onChange={setRightId}
+          disabledId={leftId}
+          placeholder="Select actress..."
+        />
       </div>
       {sharedDramas.length > 0 && (
         <div className="compare-shared">
