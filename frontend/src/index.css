@@ -269,6 +269,10 @@ body {
 /* ── Card Wrap (for popup positioning) ── */
 .actress-card-wrap {
   position: relative;
+  z-index: 1;
+}
+.actress-card-wrap:hover {
+  z-index: 200;
 }
 .actress-card {
   cursor: pointer;
