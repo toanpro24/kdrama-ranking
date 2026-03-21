@@ -41,6 +41,37 @@ The app will be available at `http://localhost:5173`.
 
 Run `run.bat` to install dependencies and launch both servers automatically.
 
+## Deploying Online
+
+### 1. Database — MongoDB Atlas (free)
+
+1. Create an account at [mongodb.com/atlas](https://www.mongodb.com/atlas)
+2. Create a free shared cluster
+3. Create a database user and whitelist `0.0.0.0/0` for access
+4. Get your connection string: `mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/kdrama_ranking`
+
+### 2. Backend — Render (free)
+
+1. Push this repo to GitHub
+2. Go to [render.com](https://render.com) → **New** → **Web Service**
+3. Connect your GitHub repo, set **Root Directory** to `backend`
+4. Settings:
+   - **Build Command:** `pip install -r requirements.txt`
+   - **Start Command:** `gunicorn main:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT`
+5. Add environment variable: `MONGODB_URI` = your Atlas connection string
+6. Deploy — note your URL (e.g. `https://kdrama-ranking-api.onrender.com`)
+
+### 3. Frontend — Vercel (free)
+
+1. Go to [vercel.com](https://vercel.com) → **New Project** → import your GitHub repo
+2. Settings:
+   - **Root Directory:** `frontend`
+   - **Framework Preset:** Vite
+3. Add environment variable: `VITE_API_URL` = `https://kdrama-ranking-api.onrender.com/api`
+4. Deploy
+
+Your app will be live at the Vercel URL.
+
 ## API Endpoints
 
 | Method | Endpoint | Description |

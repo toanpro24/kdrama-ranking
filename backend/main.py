@@ -10,7 +10,7 @@ app = FastAPI(title="K-Drama Actress Ranking API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -150,6 +150,7 @@ def get_drama(title: str):
     meta = DRAMA_META.get(decoded, {})
     drama_info["network"] = meta.get("network")
     drama_info["episodes"] = meta.get("episodes")
+    drama_info["runtime"] = meta.get("runtime")
     drama_info["genre"] = meta.get("genre")
     drama_info["synopsis"] = meta.get("synopsis")
     return drama_info

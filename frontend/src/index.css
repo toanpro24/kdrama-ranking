@@ -521,6 +521,7 @@ body {
 .year-pill { background: rgba(255,41,66,0.15); color: #FF2942; border-color: #FF294233; }
 .network-pill { background: rgba(58,143,255,0.15); color: #3A8FFF; border-color: #3A8FFF33; }
 .episodes-pill { background: rgba(58,217,160,0.15); color: #3AD9A0; border-color: #3AD9A033; }
+.runtime-pill { background: rgba(217,170,58,0.15); color: #D9AA3A; border-color: #D9AA3A33; }
 .drama-genre-line {
   font-size: 14px; color: #888; margin-top: 4px; font-style: italic;
 }

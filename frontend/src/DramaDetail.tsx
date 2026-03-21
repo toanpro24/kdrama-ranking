@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import "./index.css";
 
-const BASE = "http://localhost:8000/api";
+const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 interface CastMember {
   actressId: string;
@@ -18,6 +18,7 @@ interface DramaInfo {
   cast: CastMember[];
   network: string | null;
   episodes: number | null;
+  runtime: number | null;
   genre: string | null;
   synopsis: string | null;
 }
@@ -71,6 +72,7 @@ export default function DramaDetail() {
               <span className="drama-meta-pill year-pill">{drama.year}</span>
               {drama.network && <span className="drama-meta-pill network-pill">{drama.network}</span>}
               {drama.episodes && <span className="drama-meta-pill episodes-pill">{drama.episodes} Episodes</span>}
+              {drama.runtime && <span className="drama-meta-pill runtime-pill">{drama.runtime} min/ep</span>}
             </div>
             {drama.genre && <p className="drama-genre-line">{drama.genre}</p>}
             {drama.synopsis && <p className="drama-synopsis">{drama.synopsis}</p>}
@@ -103,6 +105,13 @@ export default function DramaDetail() {
               <div>
                 <span className="detail-info-label">Episodes</span>
                 <span className="detail-info-value">{drama.episodes || "Unknown"}</span>
+              </div>
+            </div>
+            <div className="detail-info-item">
+              <span className="detail-info-icon">&#x23F1;</span>
+              <div>
+                <span className="detail-info-label">Runtime</span>
+                <span className="detail-info-value">{drama.runtime ? `${drama.runtime} min` : "Unknown"}</span>
               </div>
             </div>
             <div className="detail-info-item">

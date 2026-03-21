@@ -1,6 +1,6 @@
 import type { Actress, Stats } from "./types";
 
-const BASE = "http://localhost:8000/api";
+const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 export async function fetchActresses(genre?: string, search?: string): Promise<Actress[]> {
   const params = new URLSearchParams();

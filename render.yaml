@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: kdrama-ranking-api
+    runtime: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn main:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: DB_NAME
+        value: kdrama_ranking
+      - key: PYTHON_VERSION
+        value: 3.12.0

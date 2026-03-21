@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import type { Actress } from "./types";
 import "./index.css";
 
-const BASE = "http://localhost:8000/api";
+const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 const TIER_INFO: Record<string, { label: string; color: string; desc: string }> = {
   splus: { label: "S+", color: "#E500A4", desc: "Legendary" },
