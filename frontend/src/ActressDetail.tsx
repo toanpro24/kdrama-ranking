@@ -21,8 +21,8 @@ export default function ActressDetail() {
       .catch(() => setLoading(false));
   }, [id]);
 
-  if (loading) return <div className="loading">Loading...</div>;
-  if (!actress) return <div className="loading">Actress not found.</div>;
+  if (loading) return <div className="loading-page"><div className="loading-spinner" /><span className="loading-text">Loading profile...</span></div>;
+  if (!actress) return <div className="error-page"><span className="error-icon">!</span><span className="error-message">Actress not found</span><button className="error-retry" onClick={() => navigate(-1)}>Go back</button></div>;
 
   const tier = actress.tier ? TIER_MAP[actress.tier] : null;
   const fallbackImg = `https://ui-avatars.com/api/?name=${encodeURIComponent(actress.name)}&size=400&background=1a1a2e&color=fff&bold=true`;

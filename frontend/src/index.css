@@ -547,6 +547,29 @@ body {
   display: flex; justify-content: center; align-items: center;
   min-height: 200px; color: #555; font-size: 14px;
 }
+.loading-page {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 60vh; gap: 16px; color: #666; font-family: 'DM Sans', sans-serif;
+}
+.loading-spinner {
+  width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.06);
+  border-top-color: #FF2942; border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { font-size: 14px; color: #555; }
+.error-page {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 60vh; gap: 12px; font-family: 'DM Sans', sans-serif;
+}
+.error-icon { font-size: 40px; opacity: 0.4; }
+.error-message { font-size: 15px; color: #888; }
+.error-retry {
+  margin-top: 8px; padding: 8px 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04); color: #fff; font-size: 13px; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; transition: background 0.2s;
+}
+.error-retry:hover { background: rgba(255,255,255,0.08); }
 
 /* ── Drama Detail Page ── */
 .drama-hero-content {

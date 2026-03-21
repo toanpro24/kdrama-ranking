@@ -8,9 +8,12 @@ import "./index.css";
 
 export default function Compare() {
   const navigate = useNavigate();
-  const { actresses } = useActresses();
+  const { actresses, loading, reload } = useActresses();
   const [leftId, setLeftId] = useState<string>("");
   const [rightId, setRightId] = useState<string>("");
+
+  if (loading) return <div className="loading-page"><div className="loading-spinner" /><span className="loading-text">Loading actresses...</span></div>;
+  if (!actresses.length) return <div className="error-page"><span className="error-icon">!</span><span className="error-message">Could not load actresses</span><button className="error-retry" onClick={reload}>Try again</button></div>;
 
   const left = actresses.find((a) => a._id === leftId) || null;
   const right = actresses.find((a) => a._id === rightId) || null;

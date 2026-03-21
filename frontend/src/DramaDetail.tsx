@@ -38,8 +38,8 @@ export default function DramaDetail() {
       .catch(() => setLoading(false));
   }, [title]);
 
-  if (loading) return <div className="loading">Loading...</div>;
-  if (!drama) return <div className="loading">Drama not found.</div>;
+  if (loading) return <div className="loading-page"><div className="loading-spinner" /><span className="loading-text">Loading drama...</span></div>;
+  if (!drama) return <div className="error-page"><span className="error-icon">!</span><span className="error-message">Drama not found</span><button className="error-retry" onClick={() => navigate(-1)}>Go back</button></div>;
 
   const fallbackPoster = `https://ui-avatars.com/api/?name=${encodeURIComponent(drama.title)}&size=400&background=1a1a2e&color=fff&bold=true&length=2`;
 
