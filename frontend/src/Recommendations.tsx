@@ -2,11 +2,8 @@ import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Actress } from "./types";
 import { fetchActresses } from "./api";
+import { TIER_WEIGHT } from "./constants";
 import "./index.css";
-
-const TIER_WEIGHT: Record<string, number> = {
-  splus: 6, s: 5, a: 4, b: 3, c: 2, d: 1,
-};
 
 interface Recommendation {
   dramaTitle: string;

@@ -1,29 +1,10 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import html2canvas from "html2canvas";
-import type { Actress, Tier, Stats } from "./types";
+import type { Actress, Stats } from "./types";
 import { fetchActresses, createActress, updateTier, deleteActress, fetchStats, resetData } from "./api";
+import { TIERS, TIER_MAP, GENRES } from "./constants";
 import "./index.css";
-
-const DEFAULT_TIERS: Tier[] = [
-  { id: "splus", label: "S+", color: "#E500A4" },
-  { id: "s", label: "S", color: "#FF2942" },
-  { id: "a", label: "A", color: "#FF7B3A" },
-  { id: "b", label: "B", color: "#FFC53A" },
-  { id: "c", label: "C", color: "#3AD9A0" },
-  { id: "d", label: "D", color: "#3A8FFF" },
-];
-
-const GENRES = ["All", "Romance", "Fantasy", "Thriller", "Comedy", "Action", "Horror", "Historical", "Drama"];
-
-const TIER_COLORS: Record<string, { label: string; color: string }> = {
-  splus: { label: "S+", color: "#E500A4" },
-  s: { label: "S", color: "#FF2942" },
-  a: { label: "A", color: "#FF7B3A" },
-  b: { label: "B", color: "#FFC53A" },
-  c: { label: "C", color: "#3AD9A0" },
-  d: { label: "D", color: "#3A8FFF" },
-};
 
 function ActressCard({
   actress,
@@ -43,7 +24,7 @@ function ActressCard({
   const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const navigate = useNavigate();
   const fallbackImg = `https://ui-avatars.com/api/?name=${encodeURIComponent(actress.name)}&size=200&background=1a1a2e&color=fff&bold=true`;
-  const tier = actress.tier ? TIER_COLORS[actress.tier] : null;
+  const tier = actress.tier ? TIER_MAP[actress.tier] : null;
 
   const handleMouseEnter = () => {
     clearTimeout(hideTimer.current);
@@ -139,7 +120,6 @@ export default function App() {
   const navigate = useNavigate();
   const [actresses, setActresses] = useState<Actress[]>([]);
   const [loading, setLoading] = useState(true);
-  const [tiers] = useState<Tier[]>(DEFAULT_TIERS);
   const [search, setSearch] = useState("");
   const [genreFilter, setGenreFilter] = useState("All");
   const [showAdd, setShowAdd] = useState(false);
@@ -177,12 +157,12 @@ export default function App() {
 
   const tierActresses = useMemo(() => {
     const map: Record<string, Actress[]> = {};
-    tiers.forEach((t) => (map[t.id] = []));
+    TIERS.forEach((t) => (map[t.id] = []));
     actresses.forEach((a) => {
       if (a.tier && map[a.tier]) map[a.tier].push(a);
     });
     return map;
-  }, [actresses, tiers]);
+  }, [actresses]);
 
   const unranked = useMemo(() => actresses.filter((a) => !a.tier), [actresses]);
 
@@ -365,7 +345,7 @@ export default function App() {
       {activeTab === "tierlist" && (
         <main className="main-content" style={{ opacity: tiersVisible ? 1 : 0, transform: tiersVisible ? "none" : "translateY(20px)", transition: "all 0.6s ease" }}>
           <section className="tiers-section" ref={tiersRef}>
-            {tiers.map((tier, i) => (
+            {TIERS.map((tier, i) => (
               <div
                 key={tier.id}
                 className={`tier-row ${dragOverTier === tier.id ? "drag-over" : ""}`}
@@ -442,7 +422,7 @@ export default function App() {
             <div className="stats-grid">
               <div className="stats-card">
                 <h3 className="stats-card-title">Tier Distribution</h3>
-                {tiers.map((t) => {
+                {TIERS.map((t) => {
                   const count = stats.tierCounts[t.id] || 0;
                   const pct = stats.ranked > 0 ? (count / stats.ranked) * 100 : 0;
                   return (
@@ -473,7 +453,7 @@ export default function App() {
               </div>
               <div className="stats-card" style={{ gridColumn: "1 / -1" }}>
                 <h3 className="stats-card-title">Roster by Tier</h3>
-                {tiers.map((t) => {
+                {TIERS.map((t) => {
                   const members = actresses.filter((a) => a.tier === t.id);
                   return (
                     <div key={t.id} style={{ marginBottom: 20 }}>

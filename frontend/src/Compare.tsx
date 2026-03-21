@@ -2,17 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Actress } from "./types";
 import { fetchActresses } from "./api";
+import { TIER_MAP } from "./constants";
 import ActressSelect from "./ActressSelect";
 import "./index.css";
-
-const TIER_INFO: Record<string, { label: string; color: string }> = {
-  splus: { label: "S+", color: "#E500A4" },
-  s: { label: "S", color: "#FF2942" },
-  a: { label: "A", color: "#FF7B3A" },
-  b: { label: "B", color: "#FFC53A" },
-  c: { label: "C", color: "#3AD9A0" },
-  d: { label: "D", color: "#3A8FFF" },
-};
 
 export default function Compare() {
   const navigate = useNavigate();
@@ -35,7 +27,7 @@ export default function Compare() {
 
   const renderSide = (actress: Actress | null) => {
     if (!actress) return <div className="compare-empty">Select an actress above</div>;
-    const tier = actress.tier ? TIER_INFO[actress.tier] : null;
+    const tier = actress.tier ? TIER_MAP[actress.tier] : null;
     return (
       <div className="compare-profile">
         <img

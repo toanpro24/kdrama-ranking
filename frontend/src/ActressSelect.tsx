@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import type { Actress } from "./types";
+import { TIER_COLOR } from "./constants";
 
 interface Props {
   actresses: Actress[];
@@ -9,11 +10,6 @@ interface Props {
   placeholder?: string;
   maxWidth?: number;
 }
-
-const TIER_COLORS: Record<string, string> = {
-  splus: "#E500A4", s: "#FF2942", a: "#FF7B3A",
-  b: "#FFC53A", c: "#3AD9A0", d: "#3A8FFF",
-};
 
 export default function ActressSelect({ actresses, value, onChange, disabledId, placeholder = "Select actress...", maxWidth }: Props) {
   const [open, setOpen] = useState(false);
@@ -64,7 +60,7 @@ export default function ActressSelect({ actresses, value, onChange, disabledId, 
             />
             <span className="actress-select-chosen-name">{selected.name}</span>
             {selected.tier && (
-              <span className="actress-select-tier" style={{ color: TIER_COLORS[selected.tier] }}>
+              <span className="actress-select-tier" style={{ color: TIER_COLOR[selected.tier] }}>
                 {selected.tier === "splus" ? "S+" : selected.tier.toUpperCase()}
               </span>
             )}
@@ -114,7 +110,7 @@ export default function ActressSelect({ actresses, value, onChange, disabledId, 
                   <span className="actress-select-option-known">{a.known}</span>
                 </div>
                 {a.tier && (
-                  <span className="actress-select-tier" style={{ color: TIER_COLORS[a.tier] }}>
+                  <span className="actress-select-tier" style={{ color: TIER_COLOR[a.tier] }}>
                     {a.tier === "splus" ? "S+" : a.tier.toUpperCase()}
                   </span>
                 )}

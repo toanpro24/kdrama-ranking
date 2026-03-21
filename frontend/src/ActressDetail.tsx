@@ -1,20 +1,11 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import type { Actress } from "./types";
+import type { Actress, WatchStatus } from "./types";
 import { rateDrama, updateWatchStatus } from "./api";
-import type { WatchStatus } from "./types";
+import { TIER_MAP } from "./constants";
 import "./index.css";
 
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
-
-const TIER_INFO: Record<string, { label: string; color: string; desc: string }> = {
-  splus: { label: "S+", color: "#E500A4", desc: "Legendary" },
-  s: { label: "S", color: "#FF2942", desc: "Supreme" },
-  a: { label: "A", color: "#FF7B3A", desc: "Excellent" },
-  b: { label: "B", color: "#FFC53A", desc: "Great" },
-  c: { label: "C", color: "#3AD9A0", desc: "Good" },
-  d: { label: "D", color: "#3A8FFF", desc: "Average" },
-};
 
 export default function ActressDetail() {
   const { id } = useParams<{ id: string }>();
@@ -33,7 +24,7 @@ export default function ActressDetail() {
   if (loading) return <div className="loading">Loading...</div>;
   if (!actress) return <div className="loading">Actress not found.</div>;
 
-  const tier = actress.tier ? TIER_INFO[actress.tier] : null;
+  const tier = actress.tier ? TIER_MAP[actress.tier] : null;
   const fallbackImg = `https://ui-avatars.com/api/?name=${encodeURIComponent(actress.name)}&size=400&background=1a1a2e&color=fff&bold=true`;
 
   // Collect all available images for the gallery: main + gallery + drama posters
