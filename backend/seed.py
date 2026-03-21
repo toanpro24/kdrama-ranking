@@ -3,7 +3,7 @@ from database import actresses_collection
 
 SEED_DATA = [
     {
-        "_id": "1", "name": "Kim Ji-won", "known": "Queen of Tears", "genre": "Romance", "year": 2024, "tier": None,
+        "name": "Kim Ji-won", "known": "Queen of Tears", "genre": "Romance", "year": 2024, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/250327_%EA%B9%80%EC%A7%80%EC%9B%90_BVLGARI_4.png/330px-250327_%EA%B9%80%EC%A7%80%EC%9B%90_BVLGARI_4.png",
         "birthDate": "October 19, 1992", "birthPlace": "Seoul, South Korea", "agency": "SidusHQ",
         "dramas": [
@@ -17,7 +17,7 @@ SEED_DATA = [
         "awards": ["Baeksang Arts Award - Best Actress (TV)", "Grand Prize (Daesang) - SBS Drama Awards 2024", "Top Excellence Award - tvN"],
     },
     {
-        "_id": "2", "name": "Jun Ji-hyun", "known": "My Love from the Star", "genre": "Fantasy", "year": 2014, "tier": None,
+        "name": "Jun Ji-hyun", "known": "My Love from the Star", "genre": "Fantasy", "year": 2014, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/ce/20250902_Jun_Ji-hyun_%28%EC%A0%84%EC%A7%80%ED%98%84%29.png/330px-20250902_Jun_Ji-hyun_%28%EC%A0%84%EC%A7%80%ED%98%84%29.png",
         "birthDate": "October 30, 1981", "birthPlace": "Seoul, South Korea", "agency": "Culture Depot",
         "dramas": [
@@ -28,7 +28,7 @@ SEED_DATA = [
         "awards": ["Grand Prize (Daesang) - SBS Drama Awards", "Baeksang Arts Award - Most Popular Actress", "Blue Dragon Film Award - Best Actress"],
     },
     {
-        "_id": "3", "name": "Song Hye-kyo", "known": "The Glory", "genre": "Thriller", "year": 2023, "tier": None,
+        "name": "Song Hye-kyo", "known": "The Glory", "genre": "Thriller", "year": 2023, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Song_Hye_Kyo_2025_%EC%86%A1%ED%98%9C%EA%B5%90_04.jpg/330px-Song_Hye_Kyo_2025_%EC%86%A1%ED%98%9C%EA%B5%90_04.jpg",
         "birthDate": "November 22, 1981", "birthPlace": "Daegu, South Korea", "agency": "UAA",
         "dramas": [
@@ -42,7 +42,7 @@ SEED_DATA = [
         "awards": ["Baeksang Arts Award - Best Actress (TV)", "Grand Prize (Daesang) - KBS Drama Awards", "Korea Drama Awards - Best Actress"],
     },
     {
-        "_id": "4", "name": "Park Shin-hye", "known": "The Heirs", "genre": "Romance", "year": 2013, "tier": None,
+        "name": "Park Shin-hye", "known": "The Heirs", "genre": "Romance", "year": 2013, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/23/Park_Shin-hye_in_April_2025.png/330px-Park_Shin-hye_in_April_2025.png",
         "birthDate": "February 18, 1990", "birthPlace": "Gwangju, South Korea", "agency": "SALT Entertainment",
         "dramas": [
@@ -56,7 +56,7 @@ SEED_DATA = [
         "awards": ["Top Excellence Award - SBS Drama Awards", "Best Actress - APAN Star Awards", "Korean Popular Culture Award"],
     },
     {
-        "_id": "5", "name": "Bae Suzy", "known": "While You Were Sleeping", "genre": "Fantasy", "year": 2017, "tier": None,
+        "name": "Bae Suzy", "known": "While You Were Sleeping", "genre": "Fantasy", "year": 2017, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4f/20241128_Bae_Suzy_CELINE_photocall_%28cropped%29.jpg/330px-20241128_Bae_Suzy_CELINE_photocall_%28cropped%29.jpg",
         "birthDate": "October 10, 1994", "birthPlace": "Gwangju, South Korea", "agency": "Management SOOP",
         "dramas": [
@@ -69,7 +69,7 @@ SEED_DATA = [
         "awards": ["Baeksang Arts Award - Most Popular Actress", "Top Excellence Award - SBS Drama Awards", "Asia Artist Award - Best Actress"],
     },
     {
-        "_id": "6", "name": "IU (Lee Ji-eun)", "known": "Hotel Del Luna", "genre": "Fantasy", "year": 2019, "tier": None,
+        "name": "IU (Lee Ji-eun)", "known": "Hotel Del Luna", "genre": "Fantasy", "year": 2019, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2f/IU_at_Blue_Dragon_Series_Awards_on_18072025_%2810%29.png/330px-IU_at_Blue_Dragon_Series_Awards_on_18072025_%2810%29.png",
         "birthDate": "May 16, 1993", "birthPlace": "Seoul, South Korea", "agency": "EDAM Entertainment",
         "dramas": [
@@ -82,7 +82,7 @@ SEED_DATA = [
         "awards": ["Grand Prize (Daesang) - tvN10 Awards", "Best Actress - Korea Drama Awards", "Golden Disc Award - Digital Bonsang"],
     },
     {
-        "_id": "7", "name": "Kim So-hyun", "known": "Love Alarm", "genre": "Romance", "year": 2019, "tier": None,
+        "name": "Kim So-hyun", "known": "Love Alarm", "genre": "Romance", "year": 2019, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Kim_So-hyun_Airport_Departure_February_2025.png/330px-Kim_So-hyun_Airport_Departure_February_2025.png",
         "birthDate": "June 4, 1999", "birthPlace": "Canberra, Australia", "agency": "Culture Depot",
         "dramas": [
@@ -95,7 +95,7 @@ SEED_DATA = [
         "awards": ["Best Young Actress - KBS Drama Awards", "Best Child Actress - Baeksang Arts Awards", "Excellence Award - MBC Drama Awards"],
     },
     {
-        "_id": "8", "name": "Moon Ga-young", "known": "True Beauty", "genre": "Romance", "year": 2020, "tier": None,
+        "name": "Moon Ga-young", "known": "True Beauty", "genre": "Romance", "year": 2020, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/20250319_Moon_Ga-young_at_a_photo_call_event_02.jpg/330px-20250319_Moon_Ga-young_at_a_photo_call_event_02.jpg",
         "birthDate": "July 10, 1996", "birthPlace": "Karlsruhe, Germany", "agency": "KeyEast",
         "dramas": [
@@ -108,7 +108,7 @@ SEED_DATA = [
         "awards": ["Best New Actress - tvN", "Rising Star Award - Asia Artist Awards", "Best Couple Award - KBS Drama Awards"],
     },
     {
-        "_id": "9", "name": "Han So-hee", "known": "My Name", "genre": "Action", "year": 2021, "tier": None,
+        "name": "Han So-hee", "known": "My Name", "genre": "Action", "year": 2021, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/Han_So-Hee_at_the_2025_Toronto_International_Film_Festival_%28cropped%29.jpg/330px-Han_So-Hee_at_the_2025_Toronto_International_Film_Festival_%28cropped%29.jpg",
         "birthDate": "November 18, 1994", "birthPlace": "Ulsan, South Korea", "agency": "9ato Entertainment",
         "dramas": [
@@ -121,7 +121,7 @@ SEED_DATA = [
         "awards": ["Best New Actress - Baeksang Arts Awards", "Popularity Award - APAN Star Awards", "Excellence Award - JTBC Drama Awards"],
     },
     {
-        "_id": "10", "name": "Kim Yoo-jung", "known": "Backstreet Rookie", "genre": "Comedy", "year": 2020, "tier": None,
+        "name": "Kim Yoo-jung", "known": "Backstreet Rookie", "genre": "Comedy", "year": 2020, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/Kim_Yoo-jung_in_October_2025_02.png/330px-Kim_Yoo-jung_in_October_2025_02.png",
         "birthDate": "September 22, 1999", "birthPlace": "Seoul, South Korea", "agency": "Awesome ENT",
         "dramas": [
@@ -134,7 +134,7 @@ SEED_DATA = [
         "awards": ["Best Young Actress - Baeksang Arts Awards", "Best Actress - KBS Drama Awards", "Top Excellence Award - SBS Drama Awards"],
     },
     {
-        "_id": "11", "name": "Shin Min-a", "known": "Hometown Cha-Cha-Cha", "genre": "Romance", "year": 2021, "tier": None,
+        "name": "Shin Min-a", "known": "Hometown Cha-Cha-Cha", "genre": "Romance", "year": 2021, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/37/Shin_Min-a_in_September_2024.png/330px-Shin_Min-a_in_September_2024.png",
         "birthDate": "April 5, 1984", "birthPlace": "Seoul, South Korea", "agency": "AM Entertainment",
         "dramas": [
@@ -147,7 +147,7 @@ SEED_DATA = [
         "awards": ["Top Excellence Award - tvN", "Best Actress - Korea Drama Awards", "Grand Prize - Model Awards"],
     },
     {
-        "_id": "12", "name": "Son Ye-jin", "known": "Crash Landing on You", "genre": "Romance", "year": 2020, "tier": None,
+        "name": "Son Ye-jin", "known": "Crash Landing on You", "genre": "Romance", "year": 2020, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/Son_Ye-jin_at_the_2025_Blue_Dragon_Film_Awards_3.png/330px-Son_Ye-jin_at_the_2025_Blue_Dragon_Film_Awards_3.png",
         "birthDate": "January 11, 1982", "birthPlace": "Daegu, South Korea", "agency": "MSteam Entertainment",
         "dramas": [
@@ -159,7 +159,7 @@ SEED_DATA = [
         "awards": ["Grand Prize (Daesang) - tvN", "Baeksang Arts Award - Best Actress", "Blue Dragon Film Award - Best Actress"],
     },
     {
-        "_id": "13", "name": "Kim Tae-ri", "known": "Twenty Five Twenty One", "genre": "Romance", "year": 2022, "tier": None,
+        "name": "Kim Tae-ri", "known": "Twenty Five Twenty One", "genre": "Romance", "year": 2022, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3b/Kim_Tae-ri_PRADA_BEAUTY_Photo_call_August_2024.png/330px-Kim_Tae-ri_PRADA_BEAUTY_Photo_call_August_2024.png",
         "birthDate": "April 24, 1990", "birthPlace": "Seoul, South Korea", "agency": "Management mmm",
         "dramas": [
@@ -170,7 +170,7 @@ SEED_DATA = [
         "awards": ["Baeksang Arts Award - Best New Actress (Film)", "Blue Dragon Film Award - Best New Actress", "Top Excellence Award - tvN"],
     },
     {
-        "_id": "14", "name": "Jeon Yeo-been", "known": "Vincenzo", "genre": "Action", "year": 2021, "tier": None,
+        "name": "Jeon Yeo-been", "known": "Vincenzo", "genre": "Action", "year": 2021, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Jeon_Yeo-been_at_the_2nd_Blue_Dragon_Series_Awards.jpg/330px-Jeon_Yeo-been_at_the_2nd_Blue_Dragon_Series_Awards.jpg",
         "birthDate": "July 26, 1989", "birthPlace": "Seoul, South Korea", "agency": "Management SOOP",
         "dramas": [
@@ -182,7 +182,7 @@ SEED_DATA = [
         "awards": ["Best New Actress - Baeksang Arts Awards", "Best Actress - Buil Film Awards", "Rising Star Award - Asia Artist Awards"],
     },
     {
-        "_id": "15", "name": "Lim Ji-yeon", "known": "The Glory", "genre": "Thriller", "year": 2023, "tier": None,
+        "name": "Lim Ji-yeon", "known": "The Glory", "genre": "Thriller", "year": 2023, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Lim_Ji-yeon_in_October_2025.png/330px-Lim_Ji-yeon_in_October_2025.png",
         "birthDate": "July 23, 1990", "birthPlace": "Seoul, South Korea", "agency": "Artist Company",
         "dramas": [
@@ -194,7 +194,7 @@ SEED_DATA = [
         "awards": ["Best Supporting Actress - Baeksang Arts Awards", "Excellence Award - Netflix Series Awards", "Best Villain - Brand of the Year Awards"],
     },
     {
-        "_id": "16", "name": "Go Min-si", "known": "Sweet Home", "genre": "Horror", "year": 2020, "tier": None,
+        "name": "Go Min-si", "known": "Sweet Home", "genre": "Horror", "year": 2020, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/93/Go_Min-si_2021.png/330px-Go_Min-si_2021.png",
         "birthDate": "April 15, 1995", "birthPlace": "Seoul, South Korea", "agency": "IOK Company",
         "dramas": [
@@ -206,7 +206,7 @@ SEED_DATA = [
         "awards": ["Best New Actress - KBS Drama Awards", "Rising Star Award - Asia Contents Awards"],
     },
     {
-        "_id": "17", "name": "Park Bo-young", "known": "Strong Woman Do Bong-soon", "genre": "Comedy", "year": 2017, "tier": None,
+        "name": "Park Bo-young", "known": "Strong Woman Do Bong-soon", "genre": "Comedy", "year": 2017, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/af/20240719_Park_Bo-young_3rd_Blue_Dragon_Series_Awards.jpg/330px-20240719_Park_Bo-young_3rd_Blue_Dragon_Series_Awards.jpg",
         "birthDate": "February 12, 1990", "birthPlace": "Jeungpyeong, South Korea", "agency": "BH Entertainment",
         "dramas": [
@@ -218,7 +218,7 @@ SEED_DATA = [
         "awards": ["Top Excellence Award - JTBC Drama Awards", "Best Actress - Korea Drama Awards", "Blue Dragon Film Award - Best New Actress"],
     },
     {
-        "_id": "18", "name": "Seo Ye-ji", "known": "It's Okay to Not Be Okay", "genre": "Romance", "year": 2020, "tier": None,
+        "name": "Seo Ye-ji", "known": "It's Okay to Not Be Okay", "genre": "Romance", "year": 2020, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Seo_Yea-ji_in_August_2024.png/330px-Seo_Yea-ji_in_August_2024.png",
         "birthDate": "April 6, 1990", "birthPlace": "Seoul, South Korea", "agency": "Gold Medalist",
         "dramas": [
@@ -230,7 +230,7 @@ SEED_DATA = [
         "awards": ["Best Actress - Brand of the Year Awards", "Top Excellence Award - tvN", "Asia Celebrity Award"],
     },
     {
-        "_id": "19", "name": "Nam Ji-hyun", "known": "Little Women", "genre": "Thriller", "year": 2022, "tier": None,
+        "name": "Nam Ji-hyun", "known": "Little Women", "genre": "Thriller", "year": 2022, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/81/Nam_Ji-hyun_in_July_2024.png/330px-Nam_Ji-hyun_in_July_2024.png",
         "birthDate": "September 17, 1995", "birthPlace": "Seoul, South Korea", "agency": "Management SOOP",
         "dramas": [
@@ -243,7 +243,7 @@ SEED_DATA = [
         "awards": ["Best New Actress - MBC Drama Awards", "Excellence Award - tvN", "Best Young Actress - SBS Drama Awards"],
     },
     {
-        "_id": "20", "name": "Kim Se-jeong", "known": "Business Proposal", "genre": "Comedy", "year": 2022, "tier": None,
+        "name": "Kim Se-jeong", "known": "Business Proposal", "genre": "Comedy", "year": 2022, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/4b/Kim_Sejeong_in_June_2025.png/330px-Kim_Sejeong_in_June_2025.png",
         "birthDate": "August 28, 1996", "birthPlace": "Gimje, South Korea", "agency": "Jellyfish Entertainment",
         "dramas": [
@@ -255,7 +255,7 @@ SEED_DATA = [
         "awards": ["Best New Actress - SBS Drama Awards", "Top Excellence Award - KBS Drama Awards", "Popularity Award - Asia Artist Awards"],
     },
     {
-        "_id": "21", "name": "Park Min-young", "known": "What's Wrong with Secretary Kim", "genre": "Romance", "year": 2018, "tier": None,
+        "name": "Park Min-young", "known": "What's Wrong with Secretary Kim", "genre": "Romance", "year": 2018, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/20250625_Park_Min-young_TAG_Heuer_PhotoCall.jpg/330px-20250625_Park_Min-young_TAG_Heuer_PhotoCall.jpg",
         "birthDate": "March 4, 1986", "birthPlace": "Seoul, South Korea", "agency": "Hook Entertainment",
         "dramas": [
@@ -269,7 +269,7 @@ SEED_DATA = [
         "awards": ["Top Excellence Award - tvN", "Best Actress - APAN Star Awards", "Excellence Award - SBS Drama Awards"],
     },
     {
-        "_id": "22", "name": "Shin Hye-sun", "known": "Mr. Queen", "genre": "Comedy", "year": 2021, "tier": None,
+        "name": "Shin Hye-sun", "known": "Mr. Queen", "genre": "Comedy", "year": 2021, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ac/Shin_Hye-sun_in_April_2024.png/330px-Shin_Hye-sun_in_April_2024.png",
         "birthDate": "August 31, 1989", "birthPlace": "Seoul, South Korea", "agency": "YNK Entertainment",
         "dramas": [
@@ -282,7 +282,7 @@ SEED_DATA = [
         "awards": ["Grand Prize (Daesang) - tvN Drama Awards", "Top Excellence Award - KBS Drama Awards", "Best Actress - APAN Star Awards"],
     },
     {
-        "_id": "23", "name": "Kim Go-eun", "known": "Goblin", "genre": "Fantasy", "year": 2017, "tier": None,
+        "name": "Kim Go-eun", "known": "Goblin", "genre": "Fantasy", "year": 2017, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/75/Kim_Go-eun_at_the_2024_Toronto_International_Film_Festival_2.jpg/330px-Kim_Go-eun_at_the_2024_Toronto_International_Film_Festival_2.jpg",
         "birthDate": "July 2, 1991", "birthPlace": "Seoul, South Korea", "agency": "BH Entertainment",
         "dramas": [
@@ -296,7 +296,7 @@ SEED_DATA = [
         "awards": ["Blue Dragon Film Award - Best New Actress", "Baeksang Arts Award - Best New Actress", "Grand Bell Award - Best Actress"],
     },
     {
-        "_id": "24", "name": "Lee Sung-kyung", "known": "Weightlifting Fairy Kim Bok-joo", "genre": "Romance", "year": 2016, "tier": None,
+        "name": "Lee Sung-kyung", "known": "Weightlifting Fairy Kim Bok-joo", "genre": "Romance", "year": 2016, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cd/Lee_Sung-kyung_in_March_2025.png/330px-Lee_Sung-kyung_in_March_2025.png",
         "birthDate": "August 10, 1990", "birthPlace": "Goyang, South Korea", "agency": "YG Entertainment",
         "dramas": [
@@ -310,7 +310,7 @@ SEED_DATA = [
         "awards": ["Best New Actress - MBC Drama Awards", "Best Couple Award - MBC Drama Awards", "Rising Star Award - Asia Artist Awards"],
     },
     {
-        "_id": "25", "name": "Jung So-min", "known": "Because This Is My First Life", "genre": "Romance", "year": 2017, "tier": None,
+        "name": "Jung So-min", "known": "Because This Is My First Life", "genre": "Romance", "year": 2017, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/2e/Jung_So-min_in_March_2025.png/330px-Jung_So-min_in_March_2025.png",
         "birthDate": "March 16, 1989", "birthPlace": "Seoul, South Korea", "agency": "Jellyfish Entertainment",
         "dramas": [
@@ -323,7 +323,7 @@ SEED_DATA = [
         "awards": ["Best New Actress - KBS Drama Awards", "Excellence Award - tvN", "Top Excellence Award - jTBC Drama Awards"],
     },
     {
-        "_id": "26", "name": "Chun Woo-hee", "known": "The Atypical Family", "genre": "Fantasy", "year": 2024, "tier": None,
+        "name": "Chun Woo-hee", "known": "The Atypical Family", "genre": "Fantasy", "year": 2024, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5a/Chun_Woo-hee_in_July_2024_02.jpg/330px-Chun_Woo-hee_in_July_2024_02.jpg",
         "birthDate": "April 20, 1987", "birthPlace": "Daegu, South Korea", "agency": "Management SOOP",
         "dramas": [
@@ -334,7 +334,7 @@ SEED_DATA = [
         "awards": ["Best Actress - Blue Dragon Film Awards", "Best New Actress - Baeksang Arts Awards (Film)", "Best Actress - Busan Film Critics Awards"],
     },
     {
-        "_id": "27", "name": "Lee Se-young", "known": "The Red Sleeve", "genre": "Historical", "year": 2021, "tier": None,
+        "name": "Lee Se-young", "known": "The Red Sleeve", "genre": "Historical", "year": 2021, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/19/Lee_Se-young_at_Incheon_International_Airport_on_28022025_%282%29.jpg/330px-Lee_Se-young_at_Incheon_International_Airport_on_28022025_%282%29.jpg",
         "birthDate": "December 20, 1992", "birthPlace": "Seoul, South Korea", "agency": "Fly Up Entertainment",
         "dramas": [
@@ -346,7 +346,7 @@ SEED_DATA = [
         "awards": ["Grand Prize (Daesang) - MBC Drama Awards", "Best Actress - APAN Star Awards", "Excellence Award - MBC Drama Awards"],
     },
     {
-        "_id": "28", "name": "Moon Chae-won", "known": "Flower of Evil", "genre": "Thriller", "year": 2020, "tier": None,
+        "name": "Moon Chae-won", "known": "Flower of Evil", "genre": "Thriller", "year": 2020, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0f/Moon_Chae-won_in_2024_-_1.png/330px-Moon_Chae-won_in_2024_-_1.png",
         "birthDate": "November 13, 1986", "birthPlace": "Daegu, South Korea", "agency": "Namoo Actors",
         "dramas": [
@@ -359,7 +359,7 @@ SEED_DATA = [
         "awards": ["Top Excellence Award - tvN", "Best Actress - KBS Drama Awards", "Excellence Award - SBS Drama Awards"],
     },
     {
-        "_id": "29", "name": "Kim Da-mi", "known": "Itaewon Class", "genre": "Drama", "year": 2020, "tier": None,
+        "name": "Kim Da-mi", "known": "Itaewon Class", "genre": "Drama", "year": 2020, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/89/20240410_Kim_Da-mi_%28%EA%B9%80%EB%8B%A4%EB%AF%B8%29.jpg/330px-20240410_Kim_Da-mi_%28%EA%B9%80%EB%8B%A4%EB%AF%B8%29.jpg",
         "birthDate": "April 9, 1995", "birthPlace": "Seoul, South Korea", "agency": "Andmarq",
         "dramas": [
@@ -369,7 +369,7 @@ SEED_DATA = [
         "awards": ["Blue Dragon Film Award - Best New Actress", "Best New Actress - Baeksang Arts Awards", "Rookie Award - Wildflower Film Awards"],
     },
     {
-        "_id": "30", "name": "Hwang Jung-eum", "known": "Kill Me, Heal Me", "genre": "Romance", "year": 2015, "tier": None,
+        "name": "Hwang Jung-eum", "known": "Kill Me, Heal Me", "genre": "Romance", "year": 2015, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/40/Hwang_Jung-eum_in_March_2024.png/330px-Hwang_Jung-eum_in_March_2024.png",
         "birthDate": "January 25, 1985", "birthPlace": "Seoul, South Korea", "agency": "C-JeS Entertainment",
         "dramas": [
@@ -383,7 +383,7 @@ SEED_DATA = [
         "awards": ["Top Excellence Award - MBC Drama Awards", "Best Actress - SBS Drama Awards", "Excellence Award - KBS Drama Awards"],
     },
     {
-        "_id": "31", "name": "Kim Hye-yoon", "known": "Lovely Runner", "genre": "Romance", "year": 2024, "tier": None,
+        "name": "Kim Hye-yoon", "known": "Lovely Runner", "genre": "Romance", "year": 2024, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/20250820_Kim_Hye_Yoon_%28%EA%B9%80%ED%98%9C%EC%9C%A4%29.png/330px-20250820_Kim_Hye_Yoon_%28%EA%B9%80%ED%98%9C%EC%9C%A4%29.png",
         "birthDate": "November 10, 1996", "birthPlace": "Seoul, South Korea", "agency": "Artist Company",
         "dramas": [
@@ -395,7 +395,7 @@ SEED_DATA = [
         "awards": ["Grand Prize (Daesang) - tvN Drama Awards 2024", "Best New Actress - Baeksang Arts Awards", "Top Excellence Award - MBC Drama Awards"],
     },
     {
-        "_id": "32", "name": "Lee Bo-young", "known": "Mine", "genre": "Thriller", "year": 2021, "tier": None,
+        "name": "Lee Bo-young", "known": "Mine", "genre": "Thriller", "year": 2021, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Lee_Bo-young_in_March_2024.png/330px-Lee_Bo-young_in_March_2024.png",
         "birthDate": "January 12, 1979", "birthPlace": "Daejeon, South Korea", "agency": "JS Pictures",
         "dramas": [
@@ -408,7 +408,7 @@ SEED_DATA = [
         "awards": ["Grand Prize (Daesang) - SBS Drama Awards", "Top Excellence Award - tvN", "Best Actress - Baeksang Arts Awards"],
     },
     {
-        "_id": "33", "name": "Gong Hyo-jin", "known": "When the Camellia Blooms", "genre": "Romance", "year": 2019, "tier": None,
+        "name": "Gong Hyo-jin", "known": "When the Camellia Blooms", "genre": "Romance", "year": 2019, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/65/Gong_Hyo-jin_in_October_2024.png/330px-Gong_Hyo-jin_in_October_2024.png",
         "birthDate": "April 4, 1980", "birthPlace": "Seoul, South Korea", "agency": "Soop Management",
         "dramas": [
@@ -422,7 +422,7 @@ SEED_DATA = [
         "awards": ["Grand Prize (Daesang) - KBS Drama Awards", "Baeksang Arts Award - Best Actress (TV)", "Top Excellence Award - SBS Drama Awards"],
     },
     {
-        "_id": "34", "name": "Ha Ji-won", "known": "Empress Ki", "genre": "Historical", "year": 2014, "tier": None,
+        "name": "Ha Ji-won", "known": "Empress Ki", "genre": "Historical", "year": 2014, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/76/Ha_Ji-won_in_September_2025.png/330px-Ha_Ji-won_in_September_2025.png",
         "birthDate": "June 28, 1978", "birthPlace": "Seoul, South Korea", "agency": "Haewadal Entertainment",
         "dramas": [
@@ -436,7 +436,7 @@ SEED_DATA = [
         "awards": ["Grand Prize (Daesang) - MBC Drama Awards", "Top Excellence Award - KBS Drama Awards", "Best Actress - Baeksang Arts Awards"],
     },
     {
-        "_id": "35", "name": "Jang Na-ra", "known": "Sell Your Haunted House", "genre": "Fantasy", "year": 2021, "tier": None,
+        "name": "Jang Na-ra", "known": "Sell Your Haunted House", "genre": "Fantasy", "year": 2021, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/33/Jang_Na-ra_in_July_2024.png/330px-Jang_Na-ra_in_July_2024.png",
         "birthDate": "March 18, 1981", "birthPlace": "Seoul, South Korea", "agency": "Lawon Entertainment",
         "dramas": [
@@ -450,7 +450,7 @@ SEED_DATA = [
         "awards": ["Top Excellence Award - KBS Drama Awards", "Best Actress - SBS Drama Awards", "Grand Prize (Daesang) - MBC Drama Awards"],
     },
     {
-        "_id": "36", "name": "Seo Hyun-jin", "known": "The Beauty Inside", "genre": "Romance", "year": 2018, "tier": None,
+        "name": "Seo Hyun-jin", "known": "The Beauty Inside", "genre": "Romance", "year": 2018, "tier": None,
         "image": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/Seo_Hyun-jin_in_February_2025.png/330px-Seo_Hyun-jin_in_February_2025.png",
         "birthDate": "February 27, 1985", "birthPlace": "Daejeon, South Korea", "agency": "Management SOOP",
         "dramas": [

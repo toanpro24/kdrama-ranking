@@ -1,12 +1,48 @@
+import urllib.parse
+from contextlib import asynccontextmanager
+
+from bson import ObjectId
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from bson import ObjectId
-from database import actresses_collection
-from models import ActressCreate, ActressResponse, TierUpdate
-from seed import seed
-from drama_metadata import DRAMA_META
 
-app = FastAPI(title="K-Drama Actress Ranking API")
+from database import actresses_collection
+from drama_metadata import DRAMA_META
+from models import ActressCreate, TierUpdate
+from seed import seed
+
+
+# ── Helper: resolve actress ID (string → ObjectId) ──
+def _oid(actress_id: str) -> ObjectId:
+    try:
+        return ObjectId(actress_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid actress ID")
+
+
+# ── Helper: atomic drama field update (no read-modify-write race) ──
+def _update_drama_field(actress_id: str, drama_title: str, field: str, value):
+    decoded = urllib.parse.unquote(drama_title)
+    result = actresses_collection.update_one(
+        {"_id": _oid(actress_id), "dramas.title": decoded},
+        {"$set": {f"dramas.$.{field}": value}},
+    )
+    if result.matched_count == 0:
+        # Distinguish: actress not found vs drama not found
+        if not actresses_collection.find_one({"_id": _oid(actress_id)}):
+            raise HTTPException(status_code=404, detail="Actress not found")
+        raise HTTPException(status_code=404, detail="Drama not found")
+    return {"actressId": actress_id, "drama": decoded, field: value}
+
+
+# ── Lifespan (replaces deprecated @app.on_event) ──
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    if actresses_collection.count_documents({}) == 0:
+        seed()
+    yield
+
+
+app = FastAPI(title="K-Drama Actress Ranking API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,12 +51,6 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-
-@app.on_event("startup")
-def startup():
-    if actresses_collection.count_documents({}) == 0:
-        seed()
 
 
 # ── GET all actresses ──
@@ -43,21 +73,19 @@ def get_actresses(genre: str | None = None, search: str | None = None):
 # ── GET single actress ──
 @app.get("/api/actresses/{actress_id}")
 def get_actress(actress_id: str):
-    doc = actresses_collection.find_one({"_id": actress_id})
+    doc = actresses_collection.find_one({"_id": _oid(actress_id)})
     if not doc:
         raise HTTPException(status_code=404, detail="Actress not found")
     doc["_id"] = str(doc["_id"])
     return doc
 
 
-# ── POST create actress ──
+# ── POST create actress (ObjectId = concurrent-safe, no race condition) ──
 @app.post("/api/actresses", status_code=201)
 def create_actress(actress: ActressCreate):
-    last = actresses_collection.find_one(sort=[("_id", -1)])
-    next_id = str(int(last["_id"]) + 1) if last else "1"
-    doc = {"_id": next_id, **actress.model_dump(), "tier": None}
-    actresses_collection.insert_one(doc)
-    doc["_id"] = str(doc["_id"])
+    doc = {**actress.model_dump(), "tier": None}
+    result = actresses_collection.insert_one(doc)
+    doc["_id"] = str(result.inserted_id)
     return doc
 
 
@@ -65,7 +93,7 @@ def create_actress(actress: ActressCreate):
 @app.patch("/api/actresses/{actress_id}/tier")
 def update_tier(actress_id: str, update: TierUpdate):
     result = actresses_collection.update_one(
-        {"_id": actress_id},
+        {"_id": _oid(actress_id)},
         {"$set": {"tier": update.tier}},
     )
     if result.matched_count == 0:
@@ -78,65 +106,35 @@ def update_tier(actress_id: str, update: TierUpdate):
 def bulk_update_tiers(updates: list[dict]):
     for u in updates:
         actresses_collection.update_one(
-            {"_id": u["id"]},
+            {"_id": _oid(u["id"])},
             {"$set": {"tier": u.get("tier")}},
         )
     return {"updated": len(updates)}
 
 
-# ── PATCH rate a drama ──
+# ── PATCH rate a drama (atomic — no read-modify-write) ──
 @app.patch("/api/actresses/{actress_id}/dramas/{drama_title}/rating")
 def rate_drama(actress_id: str, drama_title: str, body: dict):
-    import urllib.parse
-    decoded = urllib.parse.unquote(drama_title)
     rating = body.get("rating")
     if rating is not None and (rating < 1 or rating > 10):
         raise HTTPException(status_code=400, detail="Rating must be 1-10")
-    doc = actresses_collection.find_one({"_id": actress_id})
-    if not doc:
-        raise HTTPException(status_code=404, detail="Actress not found")
-    dramas = doc.get("dramas", [])
-    found = False
-    for d in dramas:
-        if d["title"] == decoded:
-            d["rating"] = rating
-            found = True
-            break
-    if not found:
-        raise HTTPException(status_code=404, detail="Drama not found")
-    actresses_collection.update_one({"_id": actress_id}, {"$set": {"dramas": dramas}})
-    return {"actressId": actress_id, "drama": decoded, "rating": rating}
+    return _update_drama_field(actress_id, drama_title, "rating", rating)
 
 
-# ── PATCH watchlist status for a drama ──
+# ── PATCH watchlist status (atomic — no read-modify-write) ──
 @app.patch("/api/actresses/{actress_id}/dramas/{drama_title}/watch-status")
 def update_watch_status(actress_id: str, drama_title: str, body: dict):
-    import urllib.parse
-    decoded = urllib.parse.unquote(drama_title)
     status = body.get("watchStatus")
     valid = [None, "watched", "watching", "plan_to_watch", "dropped"]
     if status not in valid:
         raise HTTPException(status_code=400, detail=f"Status must be one of {valid}")
-    doc = actresses_collection.find_one({"_id": actress_id})
-    if not doc:
-        raise HTTPException(status_code=404, detail="Actress not found")
-    dramas = doc.get("dramas", [])
-    found = False
-    for d in dramas:
-        if d["title"] == decoded:
-            d["watchStatus"] = status
-            found = True
-            break
-    if not found:
-        raise HTTPException(status_code=404, detail="Drama not found")
-    actresses_collection.update_one({"_id": actress_id}, {"$set": {"dramas": dramas}})
-    return {"actressId": actress_id, "drama": decoded, "watchStatus": status}
+    return _update_drama_field(actress_id, drama_title, "watchStatus", status)
 
 
 # ── DELETE actress ──
 @app.delete("/api/actresses/{actress_id}")
 def delete_actress(actress_id: str):
-    result = actresses_collection.delete_one({"_id": actress_id})
+    result = actresses_collection.delete_one({"_id": _oid(actress_id)})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Actress not found")
     return {"deleted": actress_id}
@@ -169,33 +167,40 @@ def get_stats():
     }
 
 
-# ── GET drama detail by title ──
+# ── GET drama detail (aggregation pipeline instead of full scan) ──
 @app.get("/api/dramas/{title}")
 def get_drama(title: str):
-    """Aggregate drama info from all actresses who appeared in it."""
-    import urllib.parse
     decoded = urllib.parse.unquote(title)
-    cast = []
-    drama_info = None
-    for doc in actresses_collection.find({}):
-        for d in doc.get("dramas", []):
-            if d["title"] == decoded:
-                cast.append({
-                    "actressId": str(doc["_id"]),
-                    "actressName": doc["name"],
-                    "actressImage": doc.get("image"),
-                    "role": d.get("role", ""),
-                })
-                if not drama_info:
-                    drama_info = {
-                        "title": d["title"],
-                        "year": d["year"],
-                        "poster": d.get("poster"),
-                    }
-    if not drama_info:
+    pipeline = [
+        {"$unwind": "$dramas"},
+        {"$match": {"dramas.title": decoded}},
+        {"$project": {
+            "actressId": {"$toString": "$_id"},
+            "actressName": "$name",
+            "actressImage": "$image",
+            "role": "$dramas.role",
+            "year": "$dramas.year",
+            "poster": "$dramas.poster",
+        }},
+    ]
+    results = list(actresses_collection.aggregate(pipeline))
+    if not results:
         raise HTTPException(status_code=404, detail="Drama not found")
-    drama_info["cast"] = cast
-    # Merge extra metadata if available
+    first = results[0]
+    drama_info = {
+        "title": decoded,
+        "year": first["year"],
+        "poster": first.get("poster"),
+        "cast": [
+            {
+                "actressId": r["actressId"],
+                "actressName": r["actressName"],
+                "actressImage": r.get("actressImage"),
+                "role": r.get("role", ""),
+            }
+            for r in results
+        ],
+    }
     meta = DRAMA_META.get(decoded, {})
     drama_info["network"] = meta.get("network")
     drama_info["episodes"] = meta.get("episodes")
@@ -205,22 +210,30 @@ def get_drama(title: str):
     return drama_info
 
 
-# ── GET search dramas ──
+# ── GET all dramas (aggregation pipeline) ──
 @app.get("/api/dramas")
 def search_dramas():
-    """Return all unique dramas across all actresses."""
-    dramas = {}
-    for doc in actresses_collection.find({}):
-        for d in doc.get("dramas", []):
-            t = d["title"]
-            if t not in dramas:
-                dramas[t] = {"title": t, "year": d["year"], "poster": d.get("poster"), "cast": []}
-            dramas[t]["cast"].append({
-                "actressId": str(doc["_id"]),
-                "actressName": doc["name"],
-                "role": d.get("role", ""),
-            })
-    return list(dramas.values())
+    pipeline = [
+        {"$unwind": "$dramas"},
+        {"$group": {
+            "_id": "$dramas.title",
+            "year": {"$first": "$dramas.year"},
+            "poster": {"$first": "$dramas.poster"},
+            "cast": {"$push": {
+                "actressId": {"$toString": "$_id"},
+                "actressName": "$name",
+                "role": "$dramas.role",
+            }},
+        }},
+        {"$project": {
+            "_id": 0,
+            "title": "$_id",
+            "year": 1,
+            "poster": 1,
+            "cast": 1,
+        }},
+    ]
+    return list(actresses_collection.aggregate(pipeline))
 
 
 # ── POST reset (re-seed) ──

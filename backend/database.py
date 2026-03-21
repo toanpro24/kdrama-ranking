@@ -10,3 +10,6 @@ DB_NAME = os.getenv("DB_NAME", "kdrama_ranking")
 client = MongoClient(MONGODB_URI)
 db = client[DB_NAME]
 actresses_collection = db["actresses"]
+
+# Index for fast drama lookups (used by /api/dramas/:title and drama field updates)
+actresses_collection.create_index("dramas.title")
