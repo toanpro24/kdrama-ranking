@@ -288,8 +288,9 @@ body {
   animation: popupFade 0.2s ease;
   pointer-events: auto;
 }
-.card-popup.below { top: calc(100% + 8px); }
-.card-popup.above { bottom: calc(100% + 8px); }
+/* No gap — popup touches the card so mouse never leaves the wrapper */
+.card-popup.below { top: 100%; }
+.card-popup.above { bottom: 100%; }
 @keyframes popupFade {
   from { opacity: 0; transform: translateX(-50%) scale(0.95); }
   to { opacity: 1; transform: translateX(-50%) scale(1); }

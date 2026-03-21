@@ -470,9 +470,11 @@ def seed():
     actresses_collection.drop()
     actresses_collection.insert_many(SEED_DATA)
     print(f"Seeded {len(SEED_DATA)} actresses into MongoDB.")
-    # Also populate gallery images
-    from update_gallery import update
-    update()
+    # Also populate gallery images and drama posters
+    from update_gallery import update as update_gallery
+    update_gallery()
+    from update_posters import update as update_posters
+    update_posters()
 
 
 if __name__ == "__main__":

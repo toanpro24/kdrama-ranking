@@ -44,6 +44,7 @@ function ActressCard({
   const tier = actress.tier ? TIER_COLORS[actress.tier] : null;
 
   const handleMouseEnter = () => {
+    clearTimeout(hoverTimeout.current);
     hoverTimeout.current = setTimeout(() => {
       if (cardRef.current) {
         const rect = cardRef.current.getBoundingClientRect();
@@ -53,7 +54,10 @@ function ActressCard({
     }, 400);
   };
 
-  const handleMouseLeave = () => {
+  const handleMouseLeave = (e: React.MouseEvent) => {
+    // Don't close if mouse moved to a child (popup)
+    const related = e.relatedTarget as Node | null;
+    if (related && cardRef.current?.contains(related)) return;
     clearTimeout(hoverTimeout.current);
     setHovered(false);
   };
@@ -92,7 +96,7 @@ function ActressCard({
       </div>
 
       {hovered && (
-        <div className={`card-popup ${popupPos}`} onMouseEnter={() => setHovered(true)} onMouseLeave={handleMouseLeave}>
+        <div className={`card-popup ${popupPos}`}>
           <img
             className="popup-image"
             src={actress.image || fallbackImg}
