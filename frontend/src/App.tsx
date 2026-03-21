@@ -38,14 +38,16 @@ function ActressCard({
   const [hovered, setHovered] = useState(false);
   const [popupPos, setPopupPos] = useState<"below" | "above">("below");
   const cardRef = useRef<HTMLDivElement>(null);
-  const hoverTimeout = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const showTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+  const hideTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const navigate = useNavigate();
   const fallbackImg = `https://ui-avatars.com/api/?name=${encodeURIComponent(actress.name)}&size=200&background=1a1a2e&color=fff&bold=true`;
   const tier = actress.tier ? TIER_COLORS[actress.tier] : null;
 
   const handleMouseEnter = () => {
-    clearTimeout(hoverTimeout.current);
-    hoverTimeout.current = setTimeout(() => {
+    clearTimeout(hideTimer.current);
+    clearTimeout(showTimer.current);
+    showTimer.current = setTimeout(() => {
       if (cardRef.current) {
         const rect = cardRef.current.getBoundingClientRect();
         setPopupPos(rect.top > 320 ? "above" : "below");
@@ -54,12 +56,11 @@ function ActressCard({
     }, 400);
   };
 
-  const handleMouseLeave = (e: React.MouseEvent) => {
-    // Don't close if mouse moved to a child (popup)
-    const related = e.relatedTarget as Node | null;
-    if (related && cardRef.current?.contains(related)) return;
-    clearTimeout(hoverTimeout.current);
-    setHovered(false);
+  const handleMouseLeave = () => {
+    clearTimeout(showTimer.current);
+    hideTimer.current = setTimeout(() => {
+      setHovered(false);
+    }, 100);
   };
 
   const handleClick = (e: React.MouseEvent) => {
@@ -77,7 +78,7 @@ function ActressCard({
       <div
         className="actress-card"
         draggable
-        onDragStart={(e) => { clearTimeout(hoverTimeout.current); setHovered(false); onDragStart(e, actress); }}
+        onDragStart={(e) => { clearTimeout(showTimer.current); clearTimeout(hideTimer.current); setHovered(false); onDragStart(e, actress); }}
         onClick={handleClick}
         style={{ borderLeftColor: color }}
       >
@@ -96,7 +97,7 @@ function ActressCard({
       </div>
 
       {hovered && (
-        <div className={`card-popup ${popupPos}`}>
+        <div className={`card-popup ${popupPos}`} onMouseEnter={() => clearTimeout(hideTimer.current)} onMouseLeave={handleMouseLeave}>
           <img
             className="popup-image"
             src={actress.image || fallbackImg}
