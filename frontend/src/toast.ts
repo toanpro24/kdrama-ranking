@@ -1,13 +1,6 @@
 type ToastType = "success" | "error" | "info";
 
-interface Toast {
-  id: number;
-  message: string;
-  type: ToastType;
-}
-
 let container: HTMLDivElement | null = null;
-let nextId = 0;
 
 function getContainer(): HTMLDivElement {
   if (container) return container;
