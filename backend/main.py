@@ -10,7 +10,8 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-from database import actresses_collection
+from auth import get_current_user, require_user
+from database import actresses_collection, user_rankings_collection, user_drama_status_collection
 from drama_metadata import DRAMA_META
 from models import ActressCreate, TierUpdate
 from seed import seed
@@ -36,19 +37,42 @@ def _oid(actress_id: str) -> ObjectId:
         raise HTTPException(status_code=400, detail="Invalid actress ID")
 
 
-# ── Helper: atomic drama field update (no read-modify-write race) ──
-def _update_drama_field(actress_id: str, drama_title: str, field: str, value):
-    decoded = urllib.parse.unquote(drama_title)
-    result = actresses_collection.update_one(
-        {"_id": _oid(actress_id), "dramas.title": decoded},
-        {"$set": {f"dramas.$.{field}": value}},
-    )
-    if result.matched_count == 0:
-        # Distinguish: actress not found vs drama not found
-        if not actresses_collection.find_one({"_id": _oid(actress_id)}):
-            raise HTTPException(status_code=404, detail="Actress not found")
-        raise HTTPException(status_code=404, detail="Drama not found")
-    return {"actressId": actress_id, "drama": decoded, field: value}
+# ── Helper: merge per-user data into actress documents ──
+def _merge_user_data(docs: list[dict], user_id: str | None) -> list[dict]:
+    """Overlay user-specific tier/rating/watchStatus onto shared actress docs."""
+    if not user_id:
+        # Guest: no personal data, set defaults
+        for d in docs:
+            d["tier"] = None
+            for drama in d.get("dramas", []):
+                drama["rating"] = None
+                drama["watchStatus"] = None
+        return docs
+
+    actress_ids = [d["_id"] for d in docs]
+    # Fetch user rankings for these actresses
+    rankings = {
+        r["actressId"]: r["tier"]
+        for r in user_rankings_collection.find({"userId": user_id, "actressId": {"$in": actress_ids}})
+    }
+    # Fetch user drama statuses
+    statuses_cursor = user_drama_status_collection.find({"userId": user_id, "actressId": {"$in": actress_ids}})
+    statuses = {}
+    for s in statuses_cursor:
+        statuses[(s["actressId"], s["dramaTitle"])] = s
+
+    for d in docs:
+        aid = d["_id"]
+        d["tier"] = rankings.get(aid)
+        for drama in d.get("dramas", []):
+            key = (aid, drama["title"])
+            if key in statuses:
+                drama["rating"] = statuses[key].get("rating")
+                drama["watchStatus"] = statuses[key].get("watchStatus")
+            else:
+                drama["rating"] = None
+                drama["watchStatus"] = None
+    return docs
 
 
 # ── Lifespan (replaces deprecated @app.on_event) ──
@@ -72,7 +96,7 @@ app.add_middleware(
 
 # ── GET all actresses ──
 @app.get("/api/actresses")
-def get_actresses(genre: str | None = None, search: str | None = None):
+def get_actresses(genre: str | None = None, search: str | None = None, user=Depends(get_current_user)):
     query = {}
     if genre and genre != "All":
         query["genre"] = genre
@@ -84,68 +108,99 @@ def get_actresses(genre: str | None = None, search: str | None = None):
     docs = list(actresses_collection.find(query))
     for d in docs:
         d["_id"] = str(d["_id"])
+    _merge_user_data(docs, user["uid"] if user else None)
     return docs
 
 
 # ── GET single actress ──
 @app.get("/api/actresses/{actress_id}")
-def get_actress(actress_id: str):
+def get_actress(actress_id: str, user=Depends(get_current_user)):
     doc = actresses_collection.find_one({"_id": _oid(actress_id)})
     if not doc:
         raise HTTPException(status_code=404, detail="Actress not found")
     doc["_id"] = str(doc["_id"])
+    _merge_user_data([doc], user["uid"] if user else None)
     return doc
 
 
 # ── POST create actress (ObjectId = concurrent-safe, no race condition) ──
 @app.post("/api/actresses", status_code=201)
 def create_actress(actress: ActressCreate):
-    doc = {**actress.model_dump(), "tier": None}
+    doc = actress.model_dump()
     result = actresses_collection.insert_one(doc)
     doc["_id"] = str(result.inserted_id)
+    doc["tier"] = None
     return doc
 
 
-# ── PATCH update tier ──
+# ── PATCH update tier (per-user) ──
 @app.patch("/api/actresses/{actress_id}/tier")
-def update_tier(actress_id: str, update: TierUpdate):
-    result = actresses_collection.update_one(
-        {"_id": _oid(actress_id)},
-        {"$set": {"tier": update.tier}},
-    )
-    if result.matched_count == 0:
+def update_tier(actress_id: str, update: TierUpdate, user=Depends(require_user)):
+    # Verify actress exists
+    if not actresses_collection.find_one({"_id": _oid(actress_id)}):
         raise HTTPException(status_code=404, detail="Actress not found")
+    if update.tier:
+        user_rankings_collection.update_one(
+            {"userId": user["uid"], "actressId": actress_id},
+            {"$set": {"tier": update.tier}},
+            upsert=True,
+        )
+    else:
+        user_rankings_collection.delete_one({"userId": user["uid"], "actressId": actress_id})
     return {"id": actress_id, "tier": update.tier}
 
 
-# ── PATCH bulk update tiers ──
+# ── PATCH bulk update tiers (per-user) ──
 @app.patch("/api/actresses/bulk-tier")
-def bulk_update_tiers(updates: list[dict]):
+def bulk_update_tiers(updates: list[dict], user=Depends(require_user)):
     for u in updates:
-        actresses_collection.update_one(
-            {"_id": _oid(u["id"])},
-            {"$set": {"tier": u.get("tier")}},
-        )
+        tier = u.get("tier")
+        if tier:
+            user_rankings_collection.update_one(
+                {"userId": user["uid"], "actressId": u["id"]},
+                {"$set": {"tier": tier}},
+                upsert=True,
+            )
+        else:
+            user_rankings_collection.delete_one({"userId": user["uid"], "actressId": u["id"]})
     return {"updated": len(updates)}
 
 
-# ── PATCH rate a drama (atomic — no read-modify-write) ──
+# ── PATCH rate a drama (per-user) ──
 @app.patch("/api/actresses/{actress_id}/dramas/{drama_title}/rating")
-def rate_drama(actress_id: str, drama_title: str, body: dict):
+def rate_drama(actress_id: str, drama_title: str, body: dict, user=Depends(require_user)):
+    decoded = urllib.parse.unquote(drama_title)
     rating = body.get("rating")
     if rating is not None and (rating < 1 or rating > 10):
         raise HTTPException(status_code=400, detail="Rating must be 1-10")
-    return _update_drama_field(actress_id, drama_title, "rating", rating)
+    # Verify actress and drama exist
+    if not actresses_collection.find_one({"_id": _oid(actress_id), "dramas.title": decoded}):
+        raise HTTPException(status_code=404, detail="Actress or drama not found")
+    user_drama_status_collection.update_one(
+        {"userId": user["uid"], "actressId": actress_id, "dramaTitle": decoded},
+        {"$set": {"rating": rating}},
+        upsert=True,
+    )
+    return {"actressId": actress_id, "drama": decoded, "rating": rating}
 
 
-# ── PATCH watchlist status (atomic — no read-modify-write) ──
+# ── PATCH watchlist status (per-user) ──
 @app.patch("/api/actresses/{actress_id}/dramas/{drama_title}/watch-status")
-def update_watch_status(actress_id: str, drama_title: str, body: dict):
+def update_watch_status(actress_id: str, drama_title: str, body: dict, user=Depends(require_user)):
+    decoded = urllib.parse.unquote(drama_title)
     status = body.get("watchStatus")
     valid = [None, "watched", "watching", "plan_to_watch", "dropped"]
     if status not in valid:
         raise HTTPException(status_code=400, detail=f"Status must be one of {valid}")
-    return _update_drama_field(actress_id, drama_title, "watchStatus", status)
+    # Verify actress and drama exist
+    if not actresses_collection.find_one({"_id": _oid(actress_id), "dramas.title": decoded}):
+        raise HTTPException(status_code=404, detail="Actress or drama not found")
+    user_drama_status_collection.update_one(
+        {"userId": user["uid"], "actressId": actress_id, "dramaTitle": decoded},
+        {"$set": {"watchStatus": status}},
+        upsert=True,
+    )
+    return {"actressId": actress_id, "drama": decoded, "watchStatus": status}
 
 
 # ── DELETE actress (admin-protected) ──
@@ -157,23 +212,27 @@ def delete_actress(actress_id: str):
     return {"deleted": actress_id}
 
 
-# ── GET stats ──
+# ── GET stats (per-user when logged in) ──
 @app.get("/api/stats")
-def get_stats():
+def get_stats(user=Depends(get_current_user)):
     pipeline = [
         {"$group": {"_id": "$genre", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
     ]
     genre_counts = {doc["_id"]: doc["count"] for doc in actresses_collection.aggregate(pipeline)}
-
-    tier_pipeline = [
-        {"$match": {"tier": {"$ne": None}}},
-        {"$group": {"_id": "$tier", "count": {"$sum": 1}}},
-    ]
-    tier_counts = {doc["_id"]: doc["count"] for doc in actresses_collection.aggregate(tier_pipeline)}
-
     total = actresses_collection.count_documents({})
-    ranked = actresses_collection.count_documents({"tier": {"$ne": None}})
+
+    if user:
+        tier_pipeline = [
+            {"$group": {"_id": "$tier", "count": {"$sum": 1}}},
+        ]
+        tier_counts = {doc["_id"]: doc["count"] for doc in user_rankings_collection.aggregate(
+            [{"$match": {"userId": user["uid"]}}, *tier_pipeline]
+        )}
+        ranked = sum(tier_counts.values())
+    else:
+        tier_counts = {}
+        ranked = 0
 
     return {
         "total": total,
@@ -261,8 +320,12 @@ def reset_data():
 
 
 # ── POST chat (AI recommendations via Claude Haiku, SSE streaming) ──
-def _build_system_prompt() -> str:
+def _build_system_prompt(user_id: str | None) -> str:
     docs = list(actresses_collection.find())
+    for d in docs:
+        d["_id"] = str(d["_id"])
+    _merge_user_data(docs, user_id)
+
     lines = ["You are a K-Drama recommendation assistant. You know every K-Drama ever made.",
              "The user has a tier-ranked list of K-Drama actresses and their dramas.",
              "Use this data to give personalized recommendations.",
@@ -292,7 +355,7 @@ def _build_system_prompt() -> str:
 
 
 @app.post("/api/chat")
-async def chat(request: Request):
+async def chat(request: Request, user=Depends(get_current_user)):
     if not ANTHROPIC_API_KEY:
         raise HTTPException(status_code=503, detail="AI chat is not configured")
 
@@ -302,7 +365,7 @@ async def chat(request: Request):
         raise HTTPException(status_code=400, detail="Messages are required")
 
     client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
-    system_prompt = _build_system_prompt()
+    system_prompt = _build_system_prompt(user["uid"] if user else None)
 
     def generate():
         with client.messages.stream(
