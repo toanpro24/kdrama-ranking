@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import type { WatchStatus } from "./types";
 import { fetchDrama, updateWatchStatus } from "./api";
 import { useAuth } from "./AuthContext";
+import { useActresses } from "./ActressContext";
 import "./index.css";
 
 interface CastMember {
@@ -30,6 +31,7 @@ export default function DramaDetail() {
   const { title } = useParams<{ title: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { setActresses } = useActresses();
   const [drama, setDrama] = useState<DramaInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<string | null>(null);
@@ -90,6 +92,14 @@ export default function DramaDetail() {
                     const newStatus = drama.watchStatus === ws ? null : ws;
                     updateWatchStatus(drama.actressId, drama.title, newStatus);
                     setDrama((prev) => prev ? { ...prev, watchStatus: newStatus } : prev);
+                    const aid = drama.actressId;
+                    setActresses((prev) =>
+                      prev.map((a) =>
+                        a._id === aid
+                          ? { ...a, dramas: a.dramas.map((d) => d.title === drama.title ? { ...d, watchStatus: newStatus } : d) }
+                          : a
+                      )
+                    );
                   }}
                 >
                   {ws === "watched" ? "Watched" : ws === "watching" ? "Watching" : ws === "plan_to_watch" ? "Plan to Watch" : "Dropped"}

@@ -1,18 +1,36 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import type { Actress, WatchStatus } from "./types";
 import { fetchActress, rateDrama, updateWatchStatus } from "./api";
 import { TIER_MAP } from "./constants";
 import { useAuth } from "./AuthContext";
+import { useActresses } from "./ActressContext";
 import "./index.css";
 
 export default function ActressDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { setActresses } = useActresses();
   const [actress, setActress] = useState<Actress | null>(null);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<string | null>(null);
+
+  // Sync a drama field change to both local state and shared context
+  const syncDrama = useCallback((dramaIndex: number, field: "rating" | "watchStatus", value: number | string | null) => {
+    setActress((prev) => {
+      if (!prev) return prev;
+      return { ...prev, dramas: prev.dramas.map((d, i) => i === dramaIndex ? { ...d, [field]: value } : d) };
+    });
+    if (!id) return;
+    setActresses((prev) =>
+      prev.map((a) =>
+        a._id === id
+          ? { ...a, dramas: a.dramas.map((d, i) => i === dramaIndex ? { ...d, [field]: value } : d) }
+          : a
+      )
+    );
+  }, [id, setActresses]);
 
   useEffect(() => {
     if (!id) return;
@@ -172,10 +190,7 @@ export default function ActressDetail() {
                       const origIndex = allDramas.indexOf(drama);
                       const newRating = s + 1 === drama.rating ? null : s + 1;
                       rateDrama(actress._id, drama.title, newRating);
-                      setActress((prev) => {
-                        if (!prev) return prev;
-                        return { ...prev, dramas: prev.dramas.map((d, di) => di === origIndex ? { ...d, rating: newRating } : d) };
-                      });
+                      syncDrama(origIndex, "rating", newRating);
                     }}
                   >
                     ★
@@ -194,10 +209,7 @@ export default function ActressDetail() {
                       const origIndex = allDramas.indexOf(drama);
                       const newStatus = drama.watchStatus === ws ? null : ws;
                       updateWatchStatus(actress._id, drama.title, newStatus);
-                      setActress((prev) => {
-                        if (!prev) return prev;
-                        return { ...prev, dramas: prev.dramas.map((d, di) => di === origIndex ? { ...d, watchStatus: newStatus } : d) };
-                      });
+                      syncDrama(origIndex, "watchStatus", newStatus);
                     }}
                   >
                     {ws === "watched" ? "Watched" : ws === "watching" ? "Watching" : ws === "plan_to_watch" ? "Plan" : "Dropped"}
