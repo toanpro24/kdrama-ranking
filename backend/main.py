@@ -590,11 +590,53 @@ def get_drama(title: str, user=Depends(get_current_user)):
         ],
     }
     meta = DRAMA_META.get(decoded, {})
-    drama_info["network"] = meta.get("network")
-    drama_info["episodes"] = meta.get("episodes")
-    drama_info["runtime"] = meta.get("runtime")
-    drama_info["genre"] = meta.get("genre")
-    drama_info["synopsis"] = meta.get("synopsis")
+    if meta:
+        drama_info["network"] = meta.get("network")
+        drama_info["episodes"] = meta.get("episodes")
+        drama_info["runtime"] = meta.get("runtime")
+        drama_info["genre"] = meta.get("genre")
+        drama_info["synopsis"] = meta.get("synopsis")
+    else:
+        # Fetch from TMDB dynamically
+        try:
+            tmdb_data = _tmdb_get("/search/tv", {"query": decoded, "language": "en-US"})
+            tmdb_match = None
+            for r in tmdb_data.get("results", []):
+                if r.get("original_language") == "ko":
+                    tmdb_match = r
+                    break
+            if not tmdb_match:
+                for r in tmdb_data.get("results", []):
+                    tmdb_match = r
+                    break
+
+            if tmdb_match:
+                tv_id = tmdb_match["id"]
+                detail = _tmdb_get(f"/tv/{tv_id}", {"language": "en-US"})
+                networks = [n["name"] for n in detail.get("networks", [])]
+                genres = [g["name"] for g in detail.get("genres", [])]
+                episodes = detail.get("number_of_episodes")
+                runtimes = detail.get("episode_run_time", [])
+                runtime = runtimes[0] if runtimes else None
+                synopsis = detail.get("overview") or None
+
+                drama_info["network"] = networks[0] if networks else None
+                drama_info["episodes"] = episodes
+                drama_info["runtime"] = runtime
+                drama_info["genre"] = ", ".join(genres) if genres else None
+                drama_info["synopsis"] = synopsis
+            else:
+                drama_info["network"] = None
+                drama_info["episodes"] = None
+                drama_info["runtime"] = None
+                drama_info["genre"] = None
+                drama_info["synopsis"] = None
+        except Exception:
+            drama_info["network"] = None
+            drama_info["episodes"] = None
+            drama_info["runtime"] = None
+            drama_info["genre"] = None
+            drama_info["synopsis"] = None
     return drama_info
 
 
