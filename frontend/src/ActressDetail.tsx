@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import type { Actress, WatchStatus } from "./types";
 import { rateDrama, updateWatchStatus } from "./api";
 import { TIER_MAP } from "./constants";
+import { useAuth } from "./AuthContext";
 import "./index.css";
 
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
@@ -10,6 +11,7 @@ const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 export default function ActressDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [actress, setActress] = useState<Actress | null>(null);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<string | null>(null);
@@ -166,8 +168,9 @@ export default function ActressDetail() {
                   {[...Array(10)].map((_, s) => (
                     <span
                       key={s}
-                      className={`rating-star ${(drama.rating || 0) > s ? "filled" : ""}`}
+                      className={`rating-star ${(drama.rating || 0) > s ? "filled" : ""} ${!user ? "disabled" : ""}`}
                       onClick={() => {
+                        if (!user) return;
                         const newRating = s + 1 === drama.rating ? null : s + 1;
                         rateDrama(actress._id, drama.title, newRating);
                         setActress((prev) => {
@@ -186,8 +189,10 @@ export default function ActressDetail() {
                   {(["watched", "watching", "plan_to_watch", "dropped"] as WatchStatus[]).map((ws) => (
                     <button
                       key={ws}
-                      className={`watch-btn ${drama.watchStatus === ws ? "active" : ""} ws-${ws}`}
+                      className={`watch-btn ${drama.watchStatus === ws ? "active" : ""} ws-${ws} ${!user ? "disabled" : ""}`}
+                      disabled={!user}
                       onClick={() => {
+                        if (!user) return;
                         const newStatus = drama.watchStatus === ws ? null : ws;
                         updateWatchStatus(actress._id, drama.title, newStatus);
                         setActress((prev) => {

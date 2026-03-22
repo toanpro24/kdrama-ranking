@@ -85,6 +85,7 @@ export default function App() {
   const handleDrop = useCallback(async (e: React.DragEvent, targetTier: string | null) => {
     e.preventDefault();
     setDragOverTier(null);
+    if (!user) return;
     const actressId = e.dataTransfer.getData("actressId");
     const sourceTier = e.dataTransfer.getData("sourceTier");
     const effectiveSrc = sourceTier === "unranked" ? null : sourceTier;
@@ -94,7 +95,7 @@ export default function App() {
       prev.map((a) => (a._id === actressId ? { ...a, tier: targetTier } : a))
     );
     await updateTier(actressId, targetTier);
-  }, []);
+  }, [user]);
 
   const handleAddActress = useCallback(async () => {
     if (!newName.trim()) return;
@@ -196,8 +197,8 @@ export default function App() {
         </div>
         <div className="nav-actions">
           <button onClick={handleShareTierList} className="nav-btn share-btn">📷 Share Tier List</button>
-          <button onClick={handleReset} className="nav-btn">↺ Reset</button>
-          <button onClick={() => setShowAdd(!showAdd)} className="nav-btn primary">{showAdd ? "✕ Close" : "+ Add Actress"}</button>
+          {user && <button onClick={handleReset} className="nav-btn">↺ Reset</button>}
+          {user && <button onClick={() => setShowAdd(!showAdd)} className="nav-btn primary">{showAdd ? "✕ Close" : "+ Add Actress"}</button>}
           {user ? (
             <button className="nav-btn user-btn" onClick={logout} title="Sign out">
               <img className="user-avatar" src={user.photoURL || ""} alt="" referrerPolicy="no-referrer" />
@@ -261,7 +262,7 @@ export default function App() {
                 </div>
                 <div className="tier-content">
                   {tierActresses[tier.id]?.map((a) => (
-                    <ActressCard key={a._id} actress={a} color={tier.color} onRemove={handleRemove} onDragStart={handleDragStart} />
+                    <ActressCard key={a._id} actress={a} color={tier.color} canEdit={!!user} onRemove={handleRemove} onDragStart={handleDragStart} />
                   ))}
                   {(!tierActresses[tier.id] || tierActresses[tier.id].length === 0) && (
                     <div className="empty-hint">Drag actresses here</div>
@@ -305,7 +306,7 @@ export default function App() {
             </div>
             <div className="unranked-grid">
               {filteredUnranked.map((a) => (
-                <ActressCard key={a._id} actress={a} color="#555" onRemove={handleRemove} onDragStart={handleDragStart} />
+                <ActressCard key={a._id} actress={a} color="#555" canEdit={!!user} onRemove={handleRemove} onDragStart={handleDragStart} />
               ))}
               {filteredUnranked.length === 0 && (
                 <div className="empty-hint">{unranked.length === 0 ? "All ranked! Add more above." : "No matches found."}</div>

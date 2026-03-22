@@ -6,11 +6,12 @@ import { TIER_MAP } from "./constants";
 interface Props {
   actress: Actress;
   color: string;
+  canEdit: boolean;
   onRemove: (id: string) => void;
   onDragStart: (e: React.DragEvent, actress: Actress) => void;
 }
 
-export default function ActressCard({ actress, color, onRemove, onDragStart }: Props) {
+export default function ActressCard({ actress, color, canEdit, onRemove, onDragStart }: Props) {
   const [hovered, setHovered] = useState(false);
   const [popupPos, setPopupPos] = useState<"below" | "above">("below");
   const cardRef = useRef<HTMLDivElement>(null);
@@ -53,10 +54,10 @@ export default function ActressCard({ actress, color, onRemove, onDragStart }: P
     >
       <div
         className="actress-card"
-        draggable
-        onDragStart={(e) => { clearTimeout(showTimer.current); clearTimeout(hideTimer.current); setHovered(false); onDragStart(e, actress); }}
+        draggable={canEdit}
+        onDragStart={canEdit ? (e) => { clearTimeout(showTimer.current); clearTimeout(hideTimer.current); setHovered(false); onDragStart(e, actress); } : undefined}
         onClick={handleClick}
-        style={{ borderLeftColor: color }}
+        style={{ borderLeftColor: color, cursor: canEdit ? "grab" : "pointer" }}
       >
         <img
           className="card-avatar"
@@ -70,7 +71,7 @@ export default function ActressCard({ actress, color, onRemove, onDragStart }: P
           <span className="card-known">{actress.known}</span>
           <span className="card-genre" style={{ borderColor: color + "44", color }}>{actress.genre}</span>
         </div>
-        <button className="remove-btn" onClick={() => onRemove(actress._id)} title="Remove">✕</button>
+        {canEdit && <button className="remove-btn" onClick={() => onRemove(actress._id)} title="Remove">✕</button>}
       </div>
 
       {hovered && (

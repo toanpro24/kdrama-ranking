@@ -1255,3 +1255,7 @@ body {
 @media (max-width: 480px) {
   .guest-banner span { font-size: 11px; }
 }
+
+/* Disabled states for guests */
+.rating-star.disabled { cursor: default; opacity: 0.4; }
+.watch-btn.disabled { cursor: default; opacity: 0.4; }
