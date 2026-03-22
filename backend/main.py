@@ -618,6 +618,20 @@ def get_drama(title: str, user=Depends(get_current_user)):
                 episodes = detail.get("number_of_episodes")
                 runtimes = detail.get("episode_run_time", [])
                 runtime = runtimes[0] if runtimes else None
+                # Fallback: get runtime from last episode
+                if not runtime:
+                    last_ep = detail.get("last_episode_to_air") or {}
+                    runtime = last_ep.get("runtime")
+                # Fallback: get runtime from first season episode list
+                if not runtime and detail.get("seasons"):
+                    try:
+                        s1_id = detail["seasons"][0].get("season_number", 1)
+                        s1 = _tmdb_get(f"/tv/{tv_id}/season/{s1_id}", {"language": "en-US"})
+                        ep_runtimes = [e.get("runtime") for e in s1.get("episodes", []) if e.get("runtime")]
+                        if ep_runtimes:
+                            runtime = round(sum(ep_runtimes) / len(ep_runtimes))
+                    except Exception:
+                        pass
                 synopsis = detail.get("overview") or None
 
                 drama_info["network"] = networks[0] if networks else None
