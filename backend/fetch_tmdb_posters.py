@@ -16,6 +16,8 @@ def search_drama(title: str, year: int | None = None) -> str | None:
         "query": title,
         "language": "en-US",
     })
+    if year:
+        params += f"&first_air_date_year={year}"
     url = f"https://api.themoviedb.org/3/search/tv?{params}"
     req = urllib.request.Request(url, headers={"Accept": "application/json"})
     try:
@@ -28,6 +30,9 @@ def search_drama(title: str, year: int | None = None) -> str | None:
                 poster = r.get("poster_path")
                 if lang == "ko" and poster:
                     return f"{TMDB_IMG_BASE}{poster}"
+            # If year filter returned no Korean results, retry without year
+            if year:
+                return search_drama(title, None)
             # Fallback: any result with a poster
             for r in results:
                 poster = r.get("poster_path")
