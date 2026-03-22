@@ -1,14 +1,27 @@
+import os
 import urllib.parse
 from contextlib import asynccontextmanager
 
 from bson import ObjectId
-from fastapi import FastAPI, HTTPException
+from dotenv import load_dotenv
+from fastapi import Depends, FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from database import actresses_collection
 from drama_metadata import DRAMA_META
 from models import ActressCreate, TierUpdate
 from seed import seed
+
+load_dotenv()
+ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "")
+
+
+def _require_admin(x_api_key: str = Header(default="")):
+    """Dependency: reject if no ADMIN_API_KEY is set or key doesn't match."""
+    if not ADMIN_API_KEY:
+        return  # no key configured = open (dev mode)
+    if x_api_key != ADMIN_API_KEY:
+        raise HTTPException(status_code=403, detail="Invalid or missing API key")
 
 
 # ── Helper: resolve actress ID (string → ObjectId) ──
@@ -131,8 +144,8 @@ def update_watch_status(actress_id: str, drama_title: str, body: dict):
     return _update_drama_field(actress_id, drama_title, "watchStatus", status)
 
 
-# ── DELETE actress ──
-@app.delete("/api/actresses/{actress_id}")
+# ── DELETE actress (admin-protected) ──
+@app.delete("/api/actresses/{actress_id}", dependencies=[Depends(_require_admin)])
 def delete_actress(actress_id: str):
     result = actresses_collection.delete_one({"_id": _oid(actress_id)})
     if result.deleted_count == 0:
@@ -236,8 +249,8 @@ def search_dramas():
     return list(actresses_collection.aggregate(pipeline))
 
 
-# ── POST reset (re-seed) ──
-@app.post("/api/reset")
+# ── POST reset (re-seed, admin-protected) ──
+@app.post("/api/reset", dependencies=[Depends(_require_admin)])
 def reset_data():
     seed()
     return {"message": "Data reset to defaults"}

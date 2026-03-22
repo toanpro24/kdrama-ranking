@@ -2,6 +2,13 @@ import type { Actress, Stats } from "./types";
 import { toast } from "./toast";
 
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+const ADMIN_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
+
+function adminHeaders(): Record<string, string> {
+  const h: Record<string, string> = { "Content-Type": "application/json" };
+  if (ADMIN_KEY) h["X-API-Key"] = ADMIN_KEY;
+  return h;
+}
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
   const res = await fetch(url, options);
@@ -56,7 +63,7 @@ export async function updateTier(id: string, tier: string | null): Promise<boole
 
 export async function deleteActress(id: string): Promise<boolean> {
   try {
-    await request(`${BASE}/actresses/${id}`, { method: "DELETE" });
+    await request(`${BASE}/actresses/${id}`, { method: "DELETE", headers: adminHeaders() });
     return true;
   } catch (e: any) {
     toast.error("Failed to delete actress");
@@ -75,7 +82,7 @@ export async function fetchStats(): Promise<Stats | null> {
 
 export async function resetData(): Promise<boolean> {
   try {
-    await request(`${BASE}/reset`, { method: "POST" });
+    await request(`${BASE}/reset`, { method: "POST", headers: adminHeaders() });
     toast.success("Data reset to defaults");
     return true;
   } catch (e: any) {
