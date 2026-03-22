@@ -10,6 +10,9 @@ from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from auth import get_current_user, require_user
 from database import actresses_collection, user_rankings_collection, user_drama_status_collection
@@ -20,12 +23,13 @@ from seed import seed
 load_dotenv()
 ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",") if o.strip()]
 
 
 def _require_admin(x_api_key: str = Header(default="")):
-    """Dependency: reject if no ADMIN_API_KEY is set or key doesn't match."""
+    """Dependency: reject if API key doesn't match."""
     if not ADMIN_API_KEY:
-        return  # no key configured = open (dev mode)
+        raise HTTPException(status_code=503, detail="ADMIN_API_KEY not configured")
     if x_api_key != ADMIN_API_KEY:
         raise HTTPException(status_code=403, detail="Invalid or missing API key")
 
@@ -247,14 +251,17 @@ async def lifespan(app: FastAPI):
     yield
 
 
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="K-Drama Actress Ranking API", lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-API-Key"],
 )
 
 
@@ -287,13 +294,15 @@ def get_actress(actress_id: str, user=Depends(get_current_user)):
     return doc
 
 
-TMDB_API_KEY = os.getenv("TMDB_API_KEY", "017bbf31bbe1016f0dca8bdd9be21ba4")
+TMDB_API_KEY = os.getenv("TMDB_API_KEY", "")
 TMDB_IMG = "https://image.tmdb.org/t/p/w500"
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
 GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID", "")
 
 
 def _tmdb_get(path: str, params: dict) -> dict:
+    if not TMDB_API_KEY:
+        raise HTTPException(status_code=503, detail="TMDB_API_KEY not configured")
     params["api_key"] = TMDB_API_KEY
     url = f"https://api.themoviedb.org/3{path}?{urllib.parse.urlencode(params)}"
     req = urllib.request.Request(url, headers={"Accept": "application/json"})
@@ -302,7 +311,8 @@ def _tmdb_get(path: str, params: dict) -> dict:
 
 
 @app.get("/api/search-actress")
-def search_actress_online(q: str):
+@limiter.limit("15/minute")
+def search_actress_online(request: Request, q: str):
     """Search TMDB for a Korean actress and return structured data."""
     if not q or len(q) < 2:
         return []
@@ -336,7 +346,8 @@ def search_actress_online(q: str):
 
 
 @app.get("/api/search-actress/{tmdb_id}")
-def get_actress_details_from_tmdb(tmdb_id: int):
+@limiter.limit("10/minute")
+def get_actress_details_from_tmdb(request: Request, tmdb_id: int):
     """Fetch full actress details + Korean drama credits from TMDB."""
     person = _tmdb_get(f"/person/{tmdb_id}", {"language": "en-US"})
     credits = _tmdb_get(f"/person/{tmdb_id}/tv_credits", {"language": "en-US"})
@@ -812,7 +823,8 @@ def _fetch_tmdb_dramas(person_id: int) -> list[dict]:
 
 # ── POST refresh all actress data from TMDB (admin-protected) ──
 @app.post("/api/refresh-all", dependencies=[Depends(_require_admin)])
-def refresh_all_data():
+@limiter.limit("2/hour")
+def refresh_all_data(request: Request):
     """Re-fetch dramas, gallery photos, and profile images for all actresses from TMDB."""
     import time
     actresses = list(actresses_collection.find({}))
@@ -892,6 +904,7 @@ def _build_system_prompt(user_id: str | None) -> str:
 
 
 @app.post("/api/chat")
+@limiter.limit("15/minute")
 async def chat(request: Request, user=Depends(get_current_user)):
     if not ANTHROPIC_API_KEY:
         raise HTTPException(status_code=503, detail="AI chat is not configured")
