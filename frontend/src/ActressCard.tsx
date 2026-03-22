@@ -69,7 +69,15 @@ export default function ActressCard({ actress, color, canEdit, onRemove, onDragS
         <div className="card-body">
           <span className="card-name">{actress.name}</span>
           <span className="card-known">{actress.known}</span>
-          <span className="card-genre" style={{ borderColor: color + "44", color }}>{actress.genre}</span>
+          <div className="card-meta-row">
+            <span className="card-genre" style={{ borderColor: color + "44", color }}>{actress.genre}</span>
+            {actress.birthDate && (
+              <span className="card-age">{new Date().getFullYear() - parseInt(actress.birthDate.slice(0, 4))}</span>
+            )}
+            {actress.dramas?.length > 0 && (
+              <span className="card-drama-count">{actress.dramas.filter((d) => d.category !== "show").length} dramas</span>
+            )}
+          </div>
         </div>
         {canEdit && <button className="remove-btn" onClick={() => onRemove(actress._id)} title="Remove">✕</button>}
       </div>
