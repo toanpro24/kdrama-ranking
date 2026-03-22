@@ -16,6 +16,7 @@ export default function App() {
   const [search, setSearch] = useState("");
   const [genreFilter, setGenreFilter] = useState("All");
   const [showAdd, setShowAdd] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const [newName, setNewName] = useState("");
   const [newKnown, setNewKnown] = useState("");
   const [newGenre, setNewGenre] = useState("Romance");
@@ -200,10 +201,28 @@ export default function App() {
           {user && <button onClick={handleReset} className="nav-btn">↺ Reset</button>}
           {user && <button onClick={() => setShowAdd(!showAdd)} className="nav-btn primary">{showAdd ? "✕ Close" : "+ Add Actress"}</button>}
           {user ? (
-            <button className="nav-btn user-btn" onClick={logout} title="Sign out">
-              <img className="user-avatar" src={user.photoURL || ""} alt="" referrerPolicy="no-referrer" />
-              <span className="user-name">{user.displayName?.split(" ")[0]}</span>
-            </button>
+            <div className="user-menu-wrap">
+              <button className="nav-btn user-btn" onClick={() => setShowUserMenu(!showUserMenu)}>
+                <img className="user-avatar" src={user.photoURL || ""} alt="" referrerPolicy="no-referrer" />
+                <span className="user-name">{user.displayName?.split(" ")[0]}</span>
+              </button>
+              {showUserMenu && (
+                <>
+                  <div className="user-menu-backdrop" onClick={() => setShowUserMenu(false)} />
+                  <div className="user-menu">
+                    <div className="user-menu-header">
+                      <img className="user-menu-avatar" src={user.photoURL || ""} alt="" referrerPolicy="no-referrer" />
+                      <div className="user-menu-info">
+                        <span className="user-menu-name">{user.displayName}</span>
+                        <span className="user-menu-email">{user.email}</span>
+                      </div>
+                    </div>
+                    <div className="user-menu-divider" />
+                    <button className="user-menu-item" onClick={() => { setShowUserMenu(false); logout(); }}>Sign out</button>
+                  </div>
+                </>
+              )}
+            </div>
           ) : (
             <button className="nav-btn primary google-btn" onClick={signInWithGoogle}>Sign in</button>
           )}
