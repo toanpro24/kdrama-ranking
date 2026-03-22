@@ -31,7 +31,7 @@ export default function DramaDetail() {
   const { title } = useParams<{ title: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { setActresses } = useActresses();
+  const { updateDrama } = useActresses();
   const [drama, setDrama] = useState<DramaInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<string | null>(null);
@@ -94,14 +94,7 @@ export default function DramaDetail() {
                     const ok = await updateWatchStatus(drama.actressId, drama.title, newStatus);
                     if (!ok) return;
                     setDrama((prev) => prev ? { ...prev, watchStatus: newStatus } : prev);
-                    const aid = drama.actressId;
-                    setActresses((prev) =>
-                      prev.map((a) =>
-                        a._id === aid
-                          ? { ...a, dramas: a.dramas.map((d) => d.title === drama.title ? { ...d, watchStatus: newStatus } : d) }
-                          : a
-                      )
-                    );
+                    updateDrama(drama.actressId!, drama.title, "watchStatus", newStatus);
                   }}
                 >
                   {ws === "watched" ? "Watched" : ws === "watching" ? "Watching" : ws === "plan_to_watch" ? "Plan to Watch" : "Dropped"}

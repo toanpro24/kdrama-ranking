@@ -11,7 +11,7 @@ export default function ActressDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const { setActresses } = useActresses();
+  const { updateDrama } = useActresses();
   const [actress, setActress] = useState<Actress | null>(null);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<string | null>(null);
@@ -25,20 +25,14 @@ export default function ActressDetail() {
   }, [id, authLoading, user]);
 
   // Sync a drama field change to both local state and shared context
-  const syncDrama = useCallback((dramaIndex: number, field: "rating" | "watchStatus", value: number | string | null) => {
+  const syncDrama = useCallback((dramaTitle: string, field: "rating" | "watchStatus", value: number | string | null) => {
     setActress((prev) => {
       if (!prev) return prev;
-      return { ...prev, dramas: prev.dramas.map((d, i) => i === dramaIndex ? { ...d, [field]: value } : d) };
+      return { ...prev, dramas: prev.dramas.map((d) => d.title === dramaTitle ? { ...d, [field]: value } : d) };
     });
     if (!id) return;
-    setActresses((prev) =>
-      prev.map((a) =>
-        a._id === id
-          ? { ...a, dramas: a.dramas.map((d, i) => i === dramaIndex ? { ...d, [field]: value } : d) }
-          : a
-      )
-    );
-  }, [id, setActresses]);
+    updateDrama(id, dramaTitle, field, value);
+  }, [id, updateDrama]);
 
 
   if (loading) return <div className="loading-page"><div className="loading-spinner" /><span className="loading-text">Loading profile...</span></div>;
@@ -189,10 +183,9 @@ export default function ActressDetail() {
                     className={`rating-star ${(drama.rating || 0) > s ? "filled" : ""} ${!user ? "disabled" : ""}`}
                     onClick={async () => {
                       if (!user) return;
-                      const origIndex = allDramas.indexOf(drama);
                       const newRating = s + 1 === drama.rating ? null : s + 1;
                       const ok = await rateDrama(actress._id, drama.title, newRating);
-                      if (ok) syncDrama(origIndex, "rating", newRating);
+                      if (ok) syncDrama(drama.title, "rating", newRating);
                     }}
                   >
                     ★
@@ -208,10 +201,9 @@ export default function ActressDetail() {
                     disabled={!user}
                     onClick={async () => {
                       if (!user) return;
-                      const origIndex = allDramas.indexOf(drama);
                       const newStatus = drama.watchStatus === ws ? null : ws;
                       const ok = await updateWatchStatus(actress._id, drama.title, newStatus);
-                      if (ok) syncDrama(origIndex, "watchStatus", newStatus);
+                      if (ok) syncDrama(drama.title, "watchStatus", newStatus);
                     }}
                   >
                     {ws === "watched" ? "Watched" : ws === "watching" ? "Watching" : ws === "plan_to_watch" ? "Plan" : "Dropped"}

@@ -7,8 +7,11 @@ interface ActressContextValue {
   actresses: Actress[];
   loading: boolean;
   error: boolean;
-  setActresses: React.Dispatch<React.SetStateAction<Actress[]>>;
   reload: () => Promise<void>;
+  addActress: (actress: Actress) => void;
+  removeActress: (id: string) => void;
+  updateActressTier: (id: string, tier: string | null) => void;
+  updateDrama: (actressId: string, dramaTitle: string, field: "rating" | "watchStatus", value: number | string | null) => void;
 }
 
 const ActressContext = createContext<ActressContextValue | null>(null);
@@ -27,13 +30,36 @@ export function ActressProvider({ children }: { children: React.ReactNode }) {
     setLoading(false);
   }, []);
 
-  // Reload when auth state changes (login/logout)
   useEffect(() => {
     if (!authLoading) reload();
   }, [user, authLoading, reload]);
 
+  const addActress = useCallback((actress: Actress) => {
+    setActresses((prev) => [...prev, actress]);
+  }, []);
+
+  const removeActress = useCallback((id: string) => {
+    setActresses((prev) => prev.filter((a) => a._id !== id));
+  }, []);
+
+  const updateActressTier = useCallback((id: string, tier: string | null) => {
+    setActresses((prev) =>
+      prev.map((a) => (a._id === id ? { ...a, tier } : a))
+    );
+  }, []);
+
+  const updateDrama = useCallback((actressId: string, dramaTitle: string, field: "rating" | "watchStatus", value: number | string | null) => {
+    setActresses((prev) =>
+      prev.map((a) =>
+        a._id === actressId
+          ? { ...a, dramas: a.dramas.map((d) => d.title === dramaTitle ? { ...d, [field]: value } : d) }
+          : a
+      )
+    );
+  }, []);
+
   return (
-    <ActressContext.Provider value={{ actresses, loading, error, setActresses, reload }}>
+    <ActressContext.Provider value={{ actresses, loading, error, reload, addActress, removeActress, updateActressTier, updateDrama }}>
       {children}
     </ActressContext.Provider>
   );

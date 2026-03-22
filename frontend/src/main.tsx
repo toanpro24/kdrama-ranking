@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './AuthContext'
 import { ActressProvider } from './ActressContext'
+import ErrorBoundary from './ErrorBoundary'
 import App from './App'
 import ActressDetail from './ActressDetail'
 import DramaDetail from './DramaDetail'
@@ -15,6 +16,7 @@ import Watchlist from './Watchlist'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
+      <ErrorBoundary>
       <AuthProvider>
       <ActressProvider>
         <Routes>
@@ -29,6 +31,7 @@ createRoot(document.getElementById('root')!).render(
         </Routes>
       </ActressProvider>
       </AuthProvider>
+      </ErrorBoundary>
     </BrowserRouter>
   </StrictMode>,
 )

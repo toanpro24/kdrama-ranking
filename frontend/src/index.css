@@ -1418,3 +1418,51 @@ select.add-input option { background: #161622; color: #fff; }
   background: rgba(255,255,255,0.06);
   color: #FF2942;
 }
+
+/* Error Boundary */
+.error-boundary {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 80vh;
+  text-align: center;
+  padding: 2rem;
+}
+.error-boundary-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: #FF294222;
+  color: #FF2942;
+  font-size: 2rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+}
+.error-boundary-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+  margin: 0 0 0.75rem;
+}
+.error-boundary-msg {
+  color: #888;
+  margin: 0 0 2rem;
+  max-width: 400px;
+}
+.error-boundary-btn {
+  background: linear-gradient(135deg, #FF2942, #ff6b6b);
+  color: #fff;
+  border: none;
+  padding: 0.75rem 2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.error-boundary-btn:hover {
+  opacity: 0.85;
+}

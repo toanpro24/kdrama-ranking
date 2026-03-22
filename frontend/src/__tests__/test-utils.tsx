@@ -38,8 +38,11 @@ interface ActressContextValue {
   actresses: Actress[]
   loading: boolean
   error: boolean
-  setActresses: React.Dispatch<React.SetStateAction<Actress[]>>
   reload: () => Promise<void>
+  addActress: (actress: Actress) => void
+  removeActress: (id: string) => void
+  updateActressTier: (id: string, tier: string | null) => void
+  updateDrama: (actressId: string, dramaTitle: string, field: "rating" | "watchStatus", value: number | string | null) => void
 }
 
 const MockActressContext = createContext<ActressContextValue | null>(null)
@@ -59,8 +62,11 @@ export function MockActressProvider({
     actresses,
     loading,
     error,
-    setActresses: () => {},
     reload: async () => {},
+    addActress: () => {},
+    removeActress: () => {},
+    updateActressTier: () => {},
+    updateDrama: () => {},
   }
   return <MockActressContext.Provider value={value}>{children}</MockActressContext.Provider>
 }

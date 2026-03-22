@@ -13,7 +13,7 @@ import "./index.css";
 export default function App() {
   const navigate = useNavigate();
   const { user, signInWithGoogle, logout } = useAuth();
-  const { actresses, loading, setActresses, reload } = useActresses();
+  const { actresses, loading, reload, addActress, removeActress, updateActressTier } = useActresses();
   const [search, setSearch] = useState("");
   const [genreFilter, setGenreFilter] = useState("All");
   const [showAdd, setShowAdd] = useState(false);
@@ -152,9 +152,7 @@ export default function App() {
     const effectiveSrc = sourceTier === "unranked" ? null : sourceTier;
     if (effectiveSrc === targetTier) return;
 
-    setActresses((prev) =>
-      prev.map((a) => (a._id === actressId ? { ...a, tier: targetTier } : a))
-    );
+    updateActressTier(actressId, targetTier);
     await updateTier(actressId, targetTier);
   }, [user]);
 
@@ -187,7 +185,7 @@ export default function App() {
         gallery: data.gallery || [],
       });
       if (created) {
-        setActresses((prev) => [...prev, created as Actress]);
+        addActress(created as Actress);
         setNewName("");
         setNewKnown("");
         setShowAdd(false);
@@ -202,16 +200,16 @@ export default function App() {
     const created = await createActress({ name: newName.trim(), known: newKnown.trim() || "—", genre: newGenre, year: 2024 });
     if (!created) return;
     const actress: Actress = created;
-    setActresses((prev) => [...prev, actress]);
+    addActress(actress);
     setNewName("");
     setNewKnown("");
     setShowAdd(false);
   }, [newName, newKnown, newGenre]);
 
   const handleRemove = useCallback(async (id: string) => {
-    setActresses((prev) => prev.filter((a) => a._id !== id));
+    removeActress(id);
     await deleteActress(id);
-  }, []);
+  }, [removeActress]);
 
   const handleReset = useCallback(async () => {
     await resetData();

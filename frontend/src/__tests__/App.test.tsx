@@ -32,8 +32,11 @@ vi.mock('../ActressContext', () => ({
     actresses: mockLoading ? [] : mockActresses,
     loading: mockLoading,
     error: false,
-    setActresses: vi.fn(),
     reload: mockReload,
+    addActress: vi.fn(),
+    removeActress: vi.fn(),
+    updateActressTier: vi.fn(),
+    updateDrama: vi.fn(),
   }),
   ActressProvider: ({ children }: { children: ReactNode }) => <>{children}</>,
 }))
