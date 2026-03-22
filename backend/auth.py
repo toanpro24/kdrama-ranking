@@ -15,6 +15,10 @@ if _project_id and _client_email and _private_key:
         "project_id": _project_id,
         "client_email": _client_email,
         "private_key": _private_key,
+        "private_key_id": os.getenv("FIREBASE_PRIVATE_KEY_ID", ""),
+        "client_id": "",
+        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+        "token_uri": "https://oauth2.googleapis.com/token",
     })
     firebase_admin.initialize_app(cred)
 else:
