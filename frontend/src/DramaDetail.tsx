@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import type { WatchStatus } from "./types";
+import { fetchDrama, updateWatchStatus } from "./api";
+import { useAuth } from "./AuthContext";
 import "./index.css";
-
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 interface CastMember {
   actressId: string;
@@ -21,19 +22,21 @@ interface DramaInfo {
   runtime: number | null;
   genre: string | null;
   synopsis: string | null;
+  watchStatus: WatchStatus;
+  actressId: string | null;
 }
 
 export default function DramaDetail() {
   const { title } = useParams<{ title: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [drama, setDrama] = useState<DramaInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<string | null>(null);
 
   useEffect(() => {
     if (!title) return;
-    fetch(`${BASE}/dramas/${encodeURIComponent(title)}`)
-      .then((r) => r.json())
+    fetchDrama(title)
       .then((data) => { setDrama(data); setLoading(false); })
       .catch(() => setLoading(false));
   }, [title]);
@@ -76,6 +79,23 @@ export default function DramaDetail() {
               {drama.runtime && <span className="drama-meta-pill runtime-pill">{drama.runtime} min/ep</span>}
             </div>
             {drama.genre && <p className="drama-genre-line">{drama.genre}</p>}
+            <div className="watch-status-row drama-watch-status">
+              {(["watched", "watching", "plan_to_watch", "dropped"] as WatchStatus[]).map((ws) => (
+                <button
+                  key={ws}
+                  className={`watch-btn ${drama.watchStatus === ws ? "active" : ""} ws-${ws} ${!user ? "disabled" : ""}`}
+                  disabled={!user}
+                  onClick={() => {
+                    if (!user || !drama.actressId) return;
+                    const newStatus = drama.watchStatus === ws ? null : ws;
+                    updateWatchStatus(drama.actressId, drama.title, newStatus);
+                    setDrama((prev) => prev ? { ...prev, watchStatus: newStatus } : prev);
+                  }}
+                >
+                  {ws === "watched" ? "Watched" : ws === "watching" ? "Watching" : ws === "plan_to_watch" ? "Plan to Watch" : "Dropped"}
+                </button>
+              ))}
+            </div>
             {drama.synopsis && <p className="drama-synopsis">{drama.synopsis}</p>}
           </div>
         </div>

@@ -10,6 +10,7 @@ import Compare from './Compare'
 import Timeline from './Timeline'
 import Recommendations from './Recommendations'
 import StatsPage from './StatsPage'
+import Watchlist from './Watchlist'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -21,6 +22,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/actress/:id" element={<ActressDetail />} />
           <Route path="/drama/:title" element={<DramaDetail />} />
           <Route path="/stats" element={<StatsPage />} />
+          <Route path="/watchlist" element={<Watchlist />} />
           <Route path="/compare" element={<Compare />} />
           <Route path="/timeline" element={<Timeline />} />
           <Route path="/recommendations" element={<Recommendations />} />

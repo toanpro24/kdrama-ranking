@@ -245,7 +245,7 @@ def get_stats(user=Depends(get_current_user)):
 
 # ── GET drama detail (aggregation pipeline instead of full scan) ──
 @app.get("/api/dramas/{title}")
-def get_drama(title: str):
+def get_drama(title: str, user=Depends(get_current_user)):
     decoded = urllib.parse.unquote(title)
     pipeline = [
         {"$unwind": "$dramas"},
@@ -263,10 +263,27 @@ def get_drama(title: str):
     if not results:
         raise HTTPException(status_code=404, detail="Drama not found")
     first = results[0]
+
+    # Look up per-user watch status for this drama
+    user_watch_status = None
+    user_actress_id = None
+    if user:
+        user_id = user["uid"]
+        status_doc = user_drama_status_collection.find_one(
+            {"userId": user_id, "dramaTitle": decoded}
+        )
+        if status_doc:
+            user_watch_status = status_doc.get("watchStatus")
+            user_actress_id = status_doc.get("actressId")
+    if not user_actress_id and results:
+        user_actress_id = results[0]["actressId"]
+
     drama_info = {
         "title": decoded,
         "year": first["year"],
         "poster": first.get("poster"),
+        "watchStatus": user_watch_status,
+        "actressId": user_actress_id,
         "cast": [
             {
                 "actressId": r["actressId"],
@@ -310,6 +327,47 @@ def search_dramas():
         }},
     ]
     return list(actresses_collection.aggregate(pipeline))
+
+
+# ── GET user's watchlist ──
+@app.get("/api/watchlist")
+def get_watchlist(user=Depends(require_user)):
+    user_id = user["uid"]
+    statuses = list(user_drama_status_collection.find({"userId": user_id, "watchStatus": {"$ne": None}}))
+    if not statuses:
+        return []
+
+    drama_titles = list({s["dramaTitle"] for s in statuses})
+    pipeline = [
+        {"$unwind": "$dramas"},
+        {"$match": {"dramas.title": {"$in": drama_titles}}},
+        {"$group": {
+            "_id": "$dramas.title",
+            "year": {"$first": "$dramas.year"},
+            "poster": {"$first": "$dramas.poster"},
+            "cast": {"$push": {
+                "actressId": {"$toString": "$_id"},
+                "actressName": "$name",
+                "role": "$dramas.role",
+            }},
+        }},
+    ]
+    dramas_by_title = {d["_id"]: d for d in actresses_collection.aggregate(pipeline)}
+
+    result = []
+    for s in statuses:
+        drama = dramas_by_title.get(s["dramaTitle"])
+        if not drama:
+            continue
+        result.append({
+            "title": s["dramaTitle"],
+            "year": drama["year"],
+            "poster": drama.get("poster"),
+            "watchStatus": s["watchStatus"],
+            "actressId": s["actressId"],
+            "cast": drama.get("cast", []),
+        })
+    return result
 
 
 # ── POST reset (re-seed, admin-protected) ──

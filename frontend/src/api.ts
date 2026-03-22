@@ -128,6 +128,27 @@ export async function rateDrama(actressId: string, dramaTitle: string, rating: n
   }
 }
 
+export async function fetchDrama(title: string) {
+  return request<any>(`${BASE}/dramas/${encodeURIComponent(title)}`);
+}
+
+export interface WatchlistItem {
+  title: string;
+  year: number;
+  poster: string | null;
+  watchStatus: string;
+  actressId: string;
+  cast: { actressId: string; actressName: string; role: string }[];
+}
+
+export async function fetchWatchlist(): Promise<WatchlistItem[]> {
+  try {
+    return await request<WatchlistItem[]>(`${BASE}/watchlist`);
+  } catch {
+    return [];
+  }
+}
+
 export async function askAI(
   messages: ChatMessage[],
   onChunk: (text: string) => void,
