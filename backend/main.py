@@ -1,11 +1,14 @@
+import json
 import os
 import urllib.parse
 from contextlib import asynccontextmanager
 
+import anthropic
 from bson import ObjectId
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 
 from database import actresses_collection
 from drama_metadata import DRAMA_META
@@ -14,6 +17,7 @@ from seed import seed
 
 load_dotenv()
 ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "")
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 
 
 def _require_admin(x_api_key: str = Header(default="")):
@@ -254,3 +258,61 @@ def search_dramas():
 def reset_data():
     seed()
     return {"message": "Data reset to defaults"}
+
+
+# ── POST chat (AI recommendations via Claude Haiku, SSE streaming) ──
+def _build_system_prompt() -> str:
+    docs = list(actresses_collection.find())
+    lines = ["You are a K-Drama recommendation assistant. You know every K-Drama ever made.",
+             "The user has a tier-ranked list of K-Drama actresses and their dramas.",
+             "Use this data to give personalized recommendations.",
+             "Be enthusiastic but concise. Use drama titles in quotes.",
+             "If asked about something unrelated to K-Dramas, politely steer back.",
+             "", "=== USER'S ACTRESS RANKINGS & DRAMAS ==="]
+    for doc in docs:
+        tier = doc.get("tier") or "Unranked"
+        name = doc["name"]
+        genre = doc.get("genre", "")
+        lines.append(f"\n{name} (Tier: {tier}, Genre: {genre})")
+        for d in doc.get("dramas", []):
+            rating = d.get("rating")
+            watch = d.get("watchStatus")
+            meta = DRAMA_META.get(d["title"], {})
+            parts = [f'  - "{d["title"]}" ({d.get("year", "?")})']
+            if d.get("role"):
+                parts.append(f'role: {d["role"]}')
+            if rating:
+                parts.append(f"rating: {rating}/10")
+            if watch:
+                parts.append(f"status: {watch}")
+            if meta.get("genre"):
+                parts.append(f"genre: {meta['genre']}")
+            lines.append(", ".join(parts))
+    return "\n".join(lines)
+
+
+@app.post("/api/chat")
+async def chat(request: Request):
+    if not ANTHROPIC_API_KEY:
+        raise HTTPException(status_code=503, detail="AI chat is not configured")
+
+    body = await request.json()
+    messages = body.get("messages", [])
+    if not messages:
+        raise HTTPException(status_code=400, detail="Messages are required")
+
+    client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY)
+    system_prompt = _build_system_prompt()
+
+    def generate():
+        with client.messages.stream(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1024,
+            system=system_prompt,
+            messages=messages,
+        ) as stream:
+            for text in stream.text_stream:
+                yield f"data: {json.dumps({'text': text})}\n\n"
+        yield "data: [DONE]\n\n"
+
+    return StreamingResponse(generate(), media_type="text/event-stream")

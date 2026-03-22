@@ -1,7 +1,9 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { TIER_WEIGHT } from "./constants";
 import { useActresses } from "./ActressContext";
+import { askAI } from "./api";
+import type { ChatMessage } from "./types";
 import "./index.css";
 
 interface Recommendation {
@@ -13,10 +15,61 @@ interface Recommendation {
   score: number;
 }
 
+const SUGGESTED_PROMPTS = [
+  "What should I watch next based on my ratings?",
+  "Recommend a romance drama I haven't seen",
+  "Which dramas from my list are must-watch?",
+  "Suggest something similar to my highest-rated dramas",
+];
+
 export default function Recommendations() {
   const navigate = useNavigate();
   const { actresses, loading, reload } = useActresses();
   const [filter, setFilter] = useState<"all" | "unwatched" | "top">("all");
+
+  // Chat state
+  const [chatOpen, setChatOpen] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState("");
+  const [streaming, setStreaming] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
+
+  function sendMessage(text: string) {
+    if (!text.trim() || streaming) return;
+    const userMsg: ChatMessage = { role: "user", content: text.trim() };
+    const newMessages = [...messages, userMsg];
+    setMessages(newMessages);
+    setInput("");
+    setStreaming(true);
+
+    let assistantContent = "";
+    setMessages((prev) => [...prev, { role: "assistant", content: "" }]);
+
+    askAI(
+      newMessages,
+      (chunk) => {
+        assistantContent += chunk;
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: "assistant", content: assistantContent };
+          return updated;
+        });
+      },
+      () => setStreaming(false),
+      (err) => {
+        setMessages((prev) => {
+          const updated = [...prev];
+          updated[updated.length - 1] = { role: "assistant", content: `Error: ${err}` };
+          return updated;
+        });
+        setStreaming(false);
+      },
+    );
+  }
 
   if (loading) return <div className="loading-page"><div className="loading-spinner" /><span className="loading-text">Building recommendations...</span></div>;
   if (!actresses.length) return <div className="error-page"><span className="error-icon">!</span><span className="error-message">Could not load actresses</span><button className="error-retry" onClick={reload}>Try again</button></div>;
@@ -195,6 +248,53 @@ export default function Recommendations() {
         {filtered.length === 0 && (
           <div className="recs-empty">
             No recommendations yet — rank some actresses or rate dramas to get started!
+          </div>
+        )}
+      </div>
+
+      {/* AI Chat Widget */}
+      <div className={`chat-widget ${chatOpen ? "open" : ""}`}>
+        <button className="chat-toggle" onClick={() => setChatOpen(!chatOpen)}>
+          {chatOpen ? "✕" : "AI"}
+        </button>
+        {chatOpen && (
+          <div className="chat-panel">
+            <div className="chat-header">
+              <span className="chat-header-title">K-Drama AI Assistant</span>
+              <span className="chat-header-sub">Powered by Claude</span>
+            </div>
+            <div className="chat-messages">
+              {messages.length === 0 && (
+                <div className="chat-welcome">
+                  <p>Ask me anything about K-Dramas! I know your tier rankings, ratings, and watch history.</p>
+                  <div className="chat-suggestions">
+                    {SUGGESTED_PROMPTS.map((p) => (
+                      <button key={p} className="chat-suggestion" onClick={() => sendMessage(p)}>
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {messages.map((m, i) => (
+                <div key={i} className={`chat-msg chat-msg-${m.role}`}>
+                  <div className="chat-msg-bubble">{m.content}{streaming && i === messages.length - 1 && m.role === "assistant" && <span className="chat-cursor">|</span>}</div>
+                </div>
+              ))}
+              <div ref={chatEndRef} />
+            </div>
+            <form className="chat-input-row" onSubmit={(e) => { e.preventDefault(); sendMessage(input); }}>
+              <input
+                className="chat-input"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ask about K-Dramas..."
+                disabled={streaming}
+              />
+              <button className="chat-send" type="submit" disabled={streaming || !input.trim()}>
+                {streaming ? "..." : "Send"}
+              </button>
+            </form>
           </div>
         )}
       </div>

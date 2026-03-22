@@ -38,3 +38,8 @@ export interface Stats {
   genreCounts: Record<string, number>;
   tierCounts: Record<string, number>;
 }
+
+export interface ChatMessage {
+  role: "user" | "assistant";
+  content: string;
+}
