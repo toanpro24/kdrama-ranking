@@ -1,6 +1,7 @@
 import json
 import os
 import urllib.parse
+import urllib.request
 from contextlib import asynccontextmanager
 
 import anthropic
@@ -91,11 +92,50 @@ def _apply_poster_fixes():
         )
 
 
+def _backfill_galleries():
+    """Fetch gallery photos from TMDB for actresses missing them."""
+    missing = list(actresses_collection.find({
+        "$or": [{"gallery": {"$exists": False}}, {"gallery": {"$size": 0}}]
+    }))
+    if not missing:
+        return
+    import time
+    print(f"Backfilling gallery photos for {len(missing)} actresses...")
+    for doc in missing:
+        name = doc["name"]
+        try:
+            data = _tmdb_get("/search/person", {"query": name, "language": "en-US"})
+            person_id = None
+            for p in data.get("results", []):
+                if p.get("known_for_department") != "Acting":
+                    continue
+                for kf in p.get("known_for", []):
+                    if kf.get("original_language") == "ko":
+                        person_id = p["id"]
+                        break
+                if person_id:
+                    break
+                person_id = p["id"]
+                break
+            if not person_id:
+                continue
+            images_data = _tmdb_get(f"/person/{person_id}/images", {})
+            profiles = images_data.get("profiles", [])
+            profiles.sort(key=lambda p: p.get("vote_average", 0), reverse=True)
+            gallery = [f"{TMDB_IMG}{p['file_path']}" for p in profiles if p.get("file_path")][:10]
+            if gallery:
+                actresses_collection.update_one({"_id": doc["_id"]}, {"$set": {"gallery": gallery}})
+            time.sleep(0.3)
+        except Exception as e:
+            print(f"  Error fetching gallery for {name}: {e}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if actresses_collection.count_documents({}) == 0:
         seed()
     _apply_poster_fixes()
+    _backfill_galleries()
     yield
 
 
@@ -137,6 +177,129 @@ def get_actress(actress_id: str, user=Depends(get_current_user)):
     doc["_id"] = str(doc["_id"])
     _merge_user_data([doc], user["uid"] if user else None)
     return doc
+
+
+TMDB_API_KEY = os.getenv("TMDB_API_KEY", "017bbf31bbe1016f0dca8bdd9be21ba4")
+TMDB_IMG = "https://image.tmdb.org/t/p/w500"
+
+
+def _tmdb_get(path: str, params: dict) -> dict:
+    params["api_key"] = TMDB_API_KEY
+    url = f"https://api.themoviedb.org/3{path}?{urllib.parse.urlencode(params)}"
+    req = urllib.request.Request(url, headers={"Accept": "application/json"})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        return json.loads(resp.read())
+
+
+@app.get("/api/search-actress")
+def search_actress_online(q: str):
+    """Search TMDB for a Korean actress and return structured data."""
+    if not q or len(q) < 2:
+        return []
+    data = _tmdb_get("/search/person", {"query": q, "language": "en-US"})
+    results = []
+    for p in data.get("results", [])[:8]:
+        if p.get("known_for_department") != "Acting":
+            continue
+        profile = f"{TMDB_IMG}{p['profile_path']}" if p.get("profile_path") else None
+        # Get known_for titles
+        known_for = ""
+        for kf in p.get("known_for", []):
+            title = kf.get("name") or kf.get("title", "")
+            lang = kf.get("original_language", "")
+            if lang == "ko" and title:
+                known_for = title
+                break
+        if not known_for:
+            for kf in p.get("known_for", []):
+                title = kf.get("name") or kf.get("title", "")
+                if title:
+                    known_for = title
+                    break
+        results.append({
+            "tmdbId": p["id"],
+            "name": p["name"],
+            "image": profile,
+            "knownFor": known_for,
+        })
+    return results
+
+
+@app.get("/api/search-actress/{tmdb_id}")
+def get_actress_details_from_tmdb(tmdb_id: int):
+    """Fetch full actress details + Korean drama credits from TMDB."""
+    person = _tmdb_get(f"/person/{tmdb_id}", {"language": "en-US"})
+    credits = _tmdb_get(f"/person/{tmdb_id}/tv_credits", {"language": "en-US"})
+
+    image = f"{TMDB_IMG}{person['profile_path']}" if person.get("profile_path") else None
+    birth_date = person.get("birthday")
+    birth_place = person.get("place_of_birth")
+
+    # Filter Korean dramas from credits
+    dramas = []
+    seen_titles = set()
+    for c in credits.get("cast", []):
+        if c.get("original_language") != "ko":
+            continue
+        title = c.get("name", "")
+        if not title or title in seen_titles:
+            continue
+        seen_titles.add(title)
+        year_str = c.get("first_air_date", "")
+        year = int(year_str[:4]) if year_str and len(year_str) >= 4 else 0
+        poster = f"{TMDB_IMG}{c['poster_path']}" if c.get("poster_path") else None
+        role = c.get("character", "")
+        dramas.append({"title": title, "year": year, "role": role, "poster": poster})
+
+    dramas.sort(key=lambda d: d["year"], reverse=True)
+
+    # Determine known-for (most popular Korean drama)
+    known = dramas[0]["title"] if dramas else "—"
+
+    # Guess genre from most common genre in their Korean credits
+    genre_ids = []
+    for c in credits.get("cast", []):
+        if c.get("original_language") == "ko":
+            genre_ids.extend(c.get("genre_ids", []))
+    # TMDB genre mapping (common ones)
+    tmdb_genres = {18: "Drama", 35: "Comedy", 10759: "Action", 10765: "Sci-Fi",
+                   9648: "Mystery", 80: "Crime", 10768: "War", 10751: "Family",
+                   16: "Animation", 10762: "Kids", 37: "Western", 99: "Documentary"}
+    genre_counts: dict[str, int] = {}
+    for gid in genre_ids:
+        g = tmdb_genres.get(gid, "Drama")
+        genre_counts[g] = genre_counts.get(g, 0) + 1
+    # Map to our genres: Romance, Drama, Thriller, Comedy, Action, Sci-Fi
+    top_genre = "Romance"
+    if genre_counts:
+        top = max(genre_counts, key=lambda k: genre_counts[k])
+        our_genres = {"Drama": "Romance", "Comedy": "Comedy", "Action": "Action",
+                      "Sci-Fi": "Sci-Fi", "Mystery": "Thriller", "Crime": "Thriller"}
+        top_genre = our_genres.get(top, "Romance")
+
+    # Fetch profile images for gallery
+    images_data = _tmdb_get(f"/person/{tmdb_id}/images", {})
+    gallery = []
+    profiles = images_data.get("profiles", [])
+    profiles.sort(key=lambda p: p.get("vote_average", 0), reverse=True)
+    for p in profiles:
+        path = p.get("file_path")
+        if path:
+            gallery.append(f"{TMDB_IMG}{path}")
+        if len(gallery) >= 10:
+            break
+
+    return {
+        "name": person.get("name", ""),
+        "image": image,
+        "known": known,
+        "genre": top_genre,
+        "year": dramas[0]["year"] if dramas else 2024,
+        "birthDate": birth_date,
+        "birthPlace": birth_place,
+        "dramas": dramas[:20],
+        "gallery": gallery,
+    }
 
 
 # ── POST create actress (ObjectId = concurrent-safe, no race condition) ──

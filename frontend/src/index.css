@@ -89,6 +89,7 @@ body {
   color: #666; font-size: 13px; font-weight: 600; cursor: pointer;
   font-family: 'DM Sans', sans-serif; transition: all 0.2s;
 }
+.nav-tab:hover:not(.active) { background: rgba(255,255,255,0.04); color: #aaa; transform: translateY(-1px); }
 .nav-tab.active { background: rgba(255,255,255,0.06); color: #fff; }
 .nav-actions { display: flex; gap: 8px; }
 .nav-btn {
@@ -96,11 +97,37 @@ body {
   background: transparent; color: #999; font-size: 12px; font-weight: 600;
   cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s;
 }
+.nav-btn:hover { background: rgba(255,255,255,0.06); color: #ccc; transform: translateY(-1px); }
 .nav-btn.primary {
   background: linear-gradient(135deg, #FF2942, #FF4655); color: #fff; border: none;
 }
+.nav-btn.primary:hover { background: linear-gradient(135deg, #FF4655, #FF6168); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(255,41,66,0.3); }
 .nav-btn.share-btn { border-color: rgba(58,141,255,0.3); color: #3A8FFF; }
-.nav-btn.share-btn:hover { background: rgba(58,141,255,0.1); }
+.nav-btn.share-btn:hover { background: rgba(58,141,255,0.1); transform: translateY(-1px); }
+
+/* ── Confirmation Modal ── */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+  display: flex; align-items: center; justify-content: center; z-index: 9999;
+}
+.modal-box {
+  background: #161622; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px;
+  padding: 28px 32px; max-width: 420px; width: 90%; text-align: center;
+}
+.modal-title {
+  font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 700;
+  color: #fff; margin: 0 0 10px;
+}
+.modal-text { font-size: 14px; color: #888; line-height: 1.5; margin: 0 0 24px; }
+.modal-actions { display: flex; gap: 10px; justify-content: center; }
+.modal-btn {
+  padding: 10px 24px; border-radius: 10px; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; border: none;
+}
+.modal-btn.cancel { background: rgba(255,255,255,0.06); color: #aaa; }
+.modal-btn.cancel:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.modal-btn.danger { background: linear-gradient(135deg, #FF2942, #FF4655); color: #fff; }
+.modal-btn.danger:hover { box-shadow: 0 4px 16px rgba(255,41,66,0.3); transform: translateY(-1px); }
 
 /* ── Add Panel ── */
 .add-panel {
@@ -117,11 +144,47 @@ body {
   background: rgba(255,255,255,0.03); color: #fff; font-size: 13px;
   font-family: 'DM Sans', sans-serif; outline: none;
 }
+select.add-input { appearance: none; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px; }
+select.add-input option { background: #161622; color: #fff; }
 .add-submit {
   padding: 10px 28px; border-radius: 10px; border: none;
   background: linear-gradient(135deg, #FF2942, #FF7B3A); color: #fff;
   font-size: 13px; font-weight: 700; cursor: pointer;
   font-family: 'DM Sans', sans-serif; letter-spacing: 0.3px;
+}
+.add-search-section { margin-bottom: 12px; }
+.add-search-spinner {
+  position: absolute; right: 12px; top: 34px; width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.1); border-top-color: #FF2942;
+  border-radius: 50%; animation: spin 0.6s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.add-search-dropdown {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+  background: #1a1a2e; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px;
+  margin-top: 4px; max-height: 300px; overflow-y: auto; box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+}
+.add-search-option {
+  display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+  cursor: pointer; transition: background 0.15s;
+}
+.add-search-option:hover { background: rgba(255,255,255,0.06); }
+.add-search-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.add-search-avatar-placeholder {
+  width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0;
+  background: rgba(255,41,66,0.15); display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: #FF2942; font-size: 16px;
+}
+.add-search-info { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+.add-search-name { font-size: 14px; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.add-search-known { font-size: 12px; color: #888; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.add-search-status { font-size: 12px; color: #FF2942; margin-top: 8px; }
+.add-divider {
+  display: flex; align-items: center; gap: 12px; margin: 16px 0;
+  color: #444; font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+}
+.add-divider::before, .add-divider::after {
+  content: ""; flex: 1; height: 1px; background: rgba(255,255,255,0.06);
 }
 
 /* ── Main ── */
@@ -958,14 +1021,8 @@ body {
   .card-genre { font-size: 8px; padding: 1px 6px; margin-top: 2px; }
   .remove-btn { opacity: 0.6; top: 2px; right: 2px; font-size: 10px; padding: 2px 5px; }
 
-  /* Hover popup — full width overlay on mobile */
-  .card-popup { width: 220px; }
-  .popup-image { height: 160px; }
-  .popup-name { font-size: 14px; }
-  .popup-detail-row { gap: 6px; }
-  .popup-label { font-size: 10px; }
-  .popup-value { font-size: 11px; }
-  .popup-hint { font-size: 10px; }
+  /* Hide hover popup on mobile — no hover on touch devices */
+  .card-popup { display: none; }
 
   /* Unranked pool */
   .unranked-head { padding: 16px 12px 14px; }

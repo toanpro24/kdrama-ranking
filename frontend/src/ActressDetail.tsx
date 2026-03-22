@@ -29,13 +29,11 @@ export default function ActressDetail() {
   const tier = actress.tier ? TIER_MAP[actress.tier] : null;
   const fallbackImg = `https://ui-avatars.com/api/?name=${encodeURIComponent(actress.name)}&size=400&background=1a1a2e&color=fff&bold=true`;
 
-  // Collect all available images for the gallery: main + gallery + drama posters
-  const allGalleryImages = [
-    ...(actress.gallery || []),
-    ...(actress.dramas || []).filter(d => d.poster).map(d => d.poster as string),
-  ];
-  // Deduplicate
-  const uniqueGallery = [...new Set(allGalleryImages)];
+  // Gallery photos only (no drama posters) — limit by tier
+  const TIER_GALLERY_LIMIT: Record<string, number> = { splus: 10, s: 8, a: 5, b: 3, c: 2, d: 1 };
+  const galleryPhotos = [...new Set(actress.gallery || [])];
+  const galleryLimit = actress.tier ? (TIER_GALLERY_LIMIT[actress.tier] || 10) : galleryPhotos.length;
+  const uniqueGallery = galleryPhotos.slice(0, galleryLimit);
 
   return (
     <div className="detail-page">
@@ -117,7 +115,10 @@ export default function ActressDetail() {
         <div className="detail-section">
           <h2 className="detail-section-title">
             Photo Gallery
-            <span className="detail-section-count">{uniqueGallery.length} photos</span>
+            <span className="detail-section-count">
+              {uniqueGallery.length} photo{uniqueGallery.length !== 1 ? "s" : ""}
+              {actress.tier && galleryPhotos.length > galleryLimit && ` of ${galleryPhotos.length}`}
+            </span>
           </h2>
           <div className="detail-gallery">
             {uniqueGallery.map((img, i) => (

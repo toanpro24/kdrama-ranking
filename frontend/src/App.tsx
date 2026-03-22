@@ -2,7 +2,8 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toPng } from "html-to-image";
 import type { Actress } from "./types";
-import { createActress, updateTier, deleteActress, resetData } from "./api";
+import { createActress, updateTier, deleteActress, resetData, searchActressOnline, getActressFromTMDB } from "./api";
+import type { ActressSearchResult } from "./api";
 import { TIERS, GENRES } from "./constants";
 import { useActresses } from "./ActressContext";
 import { useAuth } from "./AuthContext";
@@ -24,6 +25,11 @@ export default function App() {
   const [tiersVisible, setTiersVisible] = useState(false);
   const [dragOverTier, setDragOverTier] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"default" | "name" | "year" | "genre">("default");
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [searchResults, setSearchResults] = useState<ActressSearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [addingFromTMDB, setAddingFromTMDB] = useState(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const tiersRef = useRef<HTMLElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const scrollRAF = useRef<number | null>(null);
@@ -152,6 +158,45 @@ export default function App() {
     await updateTier(actressId, targetTier);
   }, [user]);
 
+  const handleNameChange = useCallback((val: string) => {
+    setNewName(val);
+    clearTimeout(searchTimer.current);
+    if (val.trim().length < 2) { setSearchResults([]); return; }
+    setSearchLoading(true);
+    searchTimer.current = setTimeout(async () => {
+      const results = await searchActressOnline(val.trim());
+      setSearchResults(results);
+      setSearchLoading(false);
+    }, 400);
+  }, []);
+
+  const handleSelectTMDB = useCallback(async (result: ActressSearchResult) => {
+    setAddingFromTMDB(true);
+    setSearchResults([]);
+    try {
+      const data = await getActressFromTMDB(result.tmdbId);
+      const created = await createActress({
+        name: data.name,
+        known: data.known || "—",
+        genre: data.genre || "Romance",
+        year: data.year || 2024,
+        image: data.image || undefined,
+        birthDate: data.birthDate || undefined,
+        birthPlace: data.birthPlace || undefined,
+        dramas: data.dramas || [],
+        gallery: data.gallery || [],
+      });
+      if (created) {
+        setActresses((prev) => [...prev, created as Actress]);
+        setNewName("");
+        setNewKnown("");
+        setShowAdd(false);
+      }
+    } finally {
+      setAddingFromTMDB(false);
+    }
+  }, []);
+
   const handleAddActress = useCallback(async () => {
     if (!newName.trim()) return;
     const created = await createActress({ name: newName.trim(), known: newKnown.trim() || "—", genre: newGenre, year: 2024 });
@@ -258,7 +303,7 @@ export default function App() {
         </div>
         <div className="nav-actions">
           <button onClick={handleShareTierList} className="nav-btn share-btn">📷 Share Tier List</button>
-          {user && <button onClick={handleReset} className="nav-btn">↺ Reset</button>}
+          {user && <button onClick={() => setShowResetConfirm(true)} className="nav-btn">↺ Reset</button>}
           {user && <button onClick={() => setShowAdd(!showAdd)} className="nav-btn primary">{showAdd ? "✕ Close" : "+ Add Actress"}</button>}
           {user ? (
             <div className="user-menu-wrap" ref={userMenuRef}>
@@ -293,11 +338,57 @@ export default function App() {
         </div>
       )}
 
+      {/* Reset Confirmation */}
+      {showResetConfirm && (
+        <div className="modal-overlay" onClick={() => setShowResetConfirm(false)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal-title">Reset All Rankings?</h3>
+            <p className="modal-text">This will remove all your tier placements, ratings, and watch statuses. This action cannot be undone.</p>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => setShowResetConfirm(false)}>Cancel</button>
+              <button className="modal-btn danger" onClick={() => { setShowResetConfirm(false); handleReset(); }}>Yes, Reset Everything</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Add Form */}
       {showAdd && (
         <div className="add-panel">
           <div className="add-panel-inner">
             <h3 className="add-title">Add a New Actress</h3>
+            <div className="add-search-section">
+              <div className="add-field" style={{ position: "relative" }}>
+                <label className="add-label">Search actress name</label>
+                <input
+                  value={newName}
+                  onChange={(e) => handleNameChange(e.target.value)}
+                  placeholder="e.g. Park Eun-bin"
+                  className="add-input"
+                  autoFocus
+                />
+                {searchLoading && <span className="add-search-spinner" />}
+                {searchResults.length > 0 && (
+                  <div className="add-search-dropdown">
+                    {searchResults.map((r) => (
+                      <div key={r.tmdbId} className="add-search-option" onClick={() => handleSelectTMDB(r)}>
+                        {r.image ? (
+                          <img className="add-search-avatar" src={r.image} alt={r.name} referrerPolicy="no-referrer" />
+                        ) : (
+                          <div className="add-search-avatar-placeholder">{r.name.charAt(0)}</div>
+                        )}
+                        <div className="add-search-info">
+                          <span className="add-search-name">{r.name}</span>
+                          {r.knownFor && <span className="add-search-known">{r.knownFor}</span>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {addingFromTMDB && <p className="add-search-status">Fetching actress data...</p>}
+            </div>
+            <div className="add-divider"><span>or add manually</span></div>
             <div className="add-grid">
               <div className="add-field">
                 <label className="add-label">Name *</label>
@@ -313,7 +404,7 @@ export default function App() {
                   {GENRES.filter((g) => g !== "All").map((g) => <option key={g}>{g}</option>)}
                 </select>
               </div>
-              <button onClick={handleAddActress} className="add-submit">Add to Pool</button>
+              <button onClick={handleAddActress} className="add-submit">Add Manually</button>
             </div>
           </div>
         </div>

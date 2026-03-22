@@ -149,6 +149,24 @@ export async function fetchWatchlist(): Promise<WatchlistItem[]> {
   }
 }
 
+export interface ActressSearchResult {
+  tmdbId: number;
+  name: string;
+  image: string | null;
+  knownFor: string;
+}
+
+export async function searchActressOnline(q: string): Promise<ActressSearchResult[]> {
+  if (q.length < 2) return [];
+  try {
+    return await request<ActressSearchResult[]>(`${BASE}/search-actress?q=${encodeURIComponent(q)}`);
+  } catch { return []; }
+}
+
+export async function getActressFromTMDB(tmdbId: number) {
+  return request<any>(`${BASE}/search-actress/${tmdbId}`);
+}
+
 export async function askAI(
   messages: ChatMessage[],
   onChunk: (text: string) => void,
