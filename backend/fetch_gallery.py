@@ -33,19 +33,66 @@ def find_person_id(name: str) -> int | None:
     return None
 
 
-def fetch_person_images(person_id: int) -> list[str]:
-    """Fetch profile images for a person from TMDB."""
-    data = tmdb_get(f"/person/{person_id}/images", {})
-    profiles = data.get("profiles", [])
-    # Sort by vote_average descending for best quality
-    profiles.sort(key=lambda p: p.get("vote_average", 0), reverse=True)
-    urls = []
-    for p in profiles:
-        path = p.get("file_path")
-        if path:
-            urls.append(f"{TMDB_IMG_BASE}{path}")
-        if len(urls) >= PHOTOS_PER_ACTRESS:
-            break
+def fetch_person_images(person_id: int, name: str) -> list[str]:
+    """Fetch profile + tagged images for a person from TMDB and Wikipedia."""
+    urls: list[str] = []
+    seen: set[str] = set()
+
+    def add(url: str):
+        if url not in seen and len(urls) < PHOTOS_PER_ACTRESS:
+            seen.add(url)
+            urls.append(url)
+
+    # TMDB profiles
+    try:
+        data = tmdb_get(f"/person/{person_id}/images", {})
+        profiles = data.get("profiles", [])
+        profiles.sort(key=lambda p: p.get("vote_average", 0), reverse=True)
+        for p in profiles:
+            if p.get("file_path"):
+                add(f"{TMDB_IMG_BASE}{p['file_path']}")
+    except Exception:
+        pass
+
+    # TMDB tagged images (stills, not posters)
+    if len(urls) < PHOTOS_PER_ACTRESS:
+        try:
+            tagged = tmdb_get(f"/person/{person_id}/tagged_images", {"page": 1})
+            stills = [t for t in tagged.get("results", [])
+                      if t.get("media_type") == "tv" and t.get("image_type") == "backdrop"
+                      and t.get("file_path")]
+            stills.sort(key=lambda t: t.get("vote_average", 0), reverse=True)
+            for t in stills:
+                add(f"{TMDB_IMG_BASE}{t['file_path']}")
+        except Exception:
+            pass
+
+    # Wikipedia
+    if len(urls) < PHOTOS_PER_ACTRESS:
+        try:
+            wiki_name = name.replace(" ", "_")
+            wiki_url = f"https://en.wikipedia.org/api/rest_v1/page/media-list/{urllib.parse.quote(wiki_name)}"
+            req = urllib.request.Request(wiki_url, headers={
+                "Accept": "application/json",
+                "User-Agent": "KDramaRanking/1.0",
+            })
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                wiki_data = json.loads(resp.read())
+            for item in wiki_data.get("items", []):
+                src = item.get("srcset", [{}])[0].get("src", "") if item.get("srcset") else ""
+                if not src:
+                    src = item.get("original", {}).get("source", "")
+                if not src:
+                    continue
+                if not src.startswith("http"):
+                    src = "https:" + src
+                lower = src.lower()
+                if any(skip in lower for skip in [".svg", "icon", "logo", "flag", "commons-logo", "wiki"]):
+                    continue
+                add(src)
+        except Exception:
+            pass
+
     return urls
 
 
@@ -78,7 +125,7 @@ def fetch_all():
             print("not found on TMDB")
             continue
 
-        images = fetch_person_images(person_id)
+        images = fetch_person_images(person_id, name)
         time.sleep(0.25)
 
         if not images:

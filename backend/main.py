@@ -92,10 +92,78 @@ def _apply_poster_fixes():
         )
 
 
+def _fetch_gallery_photos(person_id: int, name: str, target: int = 10) -> list[str]:
+    """Gather photos from multiple sources: TMDB profiles, TMDB tagged images, Wikipedia."""
+    gallery: list[str] = []
+    seen: set[str] = set()
+
+    def _add(url: str):
+        if url not in seen and len(gallery) < target:
+            seen.add(url)
+            gallery.append(url)
+
+    # Source 1: TMDB profile photos
+    try:
+        images_data = _tmdb_get(f"/person/{person_id}/images", {})
+        profiles = images_data.get("profiles", [])
+        profiles.sort(key=lambda p: p.get("vote_average", 0), reverse=True)
+        for p in profiles:
+            if p.get("file_path"):
+                _add(f"{TMDB_IMG}{p['file_path']}")
+    except Exception:
+        pass
+
+    # Source 2: TMDB tagged images (stills from shows, not posters)
+    if len(gallery) < target:
+        try:
+            tagged = _tmdb_get(f"/person/{person_id}/tagged_images", {"page": 1})
+            stills = [t for t in tagged.get("results", [])
+                      if t.get("media_type") == "tv" and t.get("image_type") == "backdrop"
+                      and t.get("file_path")]
+            stills.sort(key=lambda t: t.get("vote_average", 0), reverse=True)
+            for t in stills:
+                _add(f"{TMDB_IMG}{t['file_path']}")
+        except Exception:
+            pass
+
+    # Source 3: Wikipedia page images
+    if len(gallery) < target:
+        try:
+            wiki_name = name.replace(" ", "_")
+            wiki_url = f"https://en.wikipedia.org/api/rest_v1/page/media-list/{urllib.parse.quote(wiki_name)}"
+            req = urllib.request.Request(wiki_url, headers={
+                "Accept": "application/json",
+                "User-Agent": "KDramaRanking/1.0",
+            })
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                wiki_data = json.loads(resp.read())
+            for item in wiki_data.get("items", []):
+                src = item.get("srcset", [{}])[0].get("src", "") if item.get("srcset") else ""
+                if not src:
+                    src = item.get("original", {}).get("source", "")
+                if not src:
+                    continue
+                if not src.startswith("http"):
+                    src = "https:" + src
+                # Skip SVGs, icons, logos, flags, and tiny images
+                lower = src.lower()
+                if any(skip in lower for skip in [".svg", "icon", "logo", "flag", "commons-logo", "wiki"]):
+                    continue
+                _add(src)
+        except Exception:
+            pass
+
+    return gallery
+
+
 def _backfill_galleries():
-    """Fetch gallery photos from TMDB for actresses missing them."""
+    """Fetch gallery photos for actresses with fewer than 10."""
     missing = list(actresses_collection.find({
-        "$or": [{"gallery": {"$exists": False}}, {"gallery": {"$size": 0}}]
+        "$or": [
+            {"gallery": {"$exists": False}},
+            {"gallery": {"$size": 0}},
+            {"$expr": {"$lt": [{"$size": {"$ifNull": ["$gallery", []]}}, 10]}},
+        ]
     }))
     if not missing:
         return
@@ -119,12 +187,10 @@ def _backfill_galleries():
                 break
             if not person_id:
                 continue
-            images_data = _tmdb_get(f"/person/{person_id}/images", {})
-            profiles = images_data.get("profiles", [])
-            profiles.sort(key=lambda p: p.get("vote_average", 0), reverse=True)
-            gallery = [f"{TMDB_IMG}{p['file_path']}" for p in profiles if p.get("file_path")][:10]
+            gallery = _fetch_gallery_photos(person_id, name)
             if gallery:
                 actresses_collection.update_one({"_id": doc["_id"]}, {"$set": {"gallery": gallery}})
+                print(f"  {name}: {len(gallery)} photos")
             time.sleep(0.3)
         except Exception as e:
             print(f"  Error fetching gallery for {name}: {e}")
@@ -277,17 +343,8 @@ def get_actress_details_from_tmdb(tmdb_id: int):
                       "Sci-Fi": "Sci-Fi", "Mystery": "Thriller", "Crime": "Thriller"}
         top_genre = our_genres.get(top, "Romance")
 
-    # Fetch profile images for gallery
-    images_data = _tmdb_get(f"/person/{tmdb_id}/images", {})
-    gallery = []
-    profiles = images_data.get("profiles", [])
-    profiles.sort(key=lambda p: p.get("vote_average", 0), reverse=True)
-    for p in profiles:
-        path = p.get("file_path")
-        if path:
-            gallery.append(f"{TMDB_IMG}{path}")
-        if len(gallery) >= 10:
-            break
+    # Fetch gallery photos from multiple sources
+    gallery = _fetch_gallery_photos(tmdb_id, person.get("name", ""))
 
     return {
         "name": person.get("name", ""),
