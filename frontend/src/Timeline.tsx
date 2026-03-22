@@ -16,10 +16,8 @@ export default function Timeline() {
   const { actresses, loading, reload } = useActresses();
   const [filterActress, setFilterActress] = useState<string>("");
 
-  if (loading) return <div className="loading-page"><div className="loading-spinner" /><span className="loading-text">Loading timeline...</span></div>;
-  if (!actresses.length) return <div className="error-page"><span className="error-icon">!</span><span className="error-message">Could not load actresses</span><button className="error-retry" onClick={reload}>Try again</button></div>;
-
   const dramasByYear = useMemo(() => {
+    if (!actresses.length) return {} as Record<number, TimelineDrama[]>;
     const map: Record<string, TimelineDrama> = {};
     const filtered = filterActress
       ? actresses.filter((a) => a._id === filterActress)
@@ -46,6 +44,9 @@ export default function Timeline() {
   }, [actresses, filterActress]);
 
   const years = Object.keys(dramasByYear).map(Number).sort((a, b) => b - a);
+
+  if (loading) return <div className="loading-page"><div className="loading-spinner" /><span className="loading-text">Loading timeline...</span></div>;
+  if (!actresses.length) return <div className="error-page"><span className="error-icon">!</span><span className="error-message">Could not load actresses</span><button className="error-retry" onClick={reload}>Try again</button></div>;
 
   return (
     <div className="detail-page">

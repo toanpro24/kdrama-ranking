@@ -27,6 +27,7 @@ export default function App() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [sortBy, setSortBy] = useState<"default" | "name" | "year" | "genre">("default");
   const tiersRef = useRef<HTMLElement>(null);
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
   const loadStats = useCallback(async () => {
     const data = await fetchStats();
@@ -37,6 +38,17 @@ export default function App() {
     setTimeout(() => setHeroVisible(true), 100);
     setTimeout(() => setTiersVisible(true), 500);
   }, []);
+
+  useEffect(() => {
+    if (!showUserMenu) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setShowUserMenu(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showUserMenu]);
 
   useEffect(() => {
     if (activeTab === "stats") loadStats();
@@ -201,26 +213,23 @@ export default function App() {
           {user && <button onClick={handleReset} className="nav-btn">↺ Reset</button>}
           {user && <button onClick={() => setShowAdd(!showAdd)} className="nav-btn primary">{showAdd ? "✕ Close" : "+ Add Actress"}</button>}
           {user ? (
-            <div className="user-menu-wrap">
+            <div className="user-menu-wrap" ref={userMenuRef}>
               <button className="nav-btn user-btn" onClick={() => setShowUserMenu(!showUserMenu)}>
                 <img className="user-avatar" src={user.photoURL || ""} alt="" referrerPolicy="no-referrer" />
                 <span className="user-name">{user.displayName?.split(" ")[0]}</span>
               </button>
               {showUserMenu && (
-                <>
-                  <div className="user-menu-backdrop" onClick={() => setShowUserMenu(false)} />
-                  <div className="user-menu">
-                    <div className="user-menu-header">
-                      <img className="user-menu-avatar" src={user.photoURL || ""} alt="" referrerPolicy="no-referrer" />
-                      <div className="user-menu-info">
-                        <span className="user-menu-name">{user.displayName}</span>
-                        <span className="user-menu-email">{user.email}</span>
-                      </div>
+                <div className="user-menu">
+                  <div className="user-menu-header">
+                    <img className="user-menu-avatar" src={user.photoURL || ""} alt="" referrerPolicy="no-referrer" />
+                    <div className="user-menu-info">
+                      <span className="user-menu-name">{user.displayName}</span>
+                      <span className="user-menu-email">{user.email}</span>
                     </div>
-                    <div className="user-menu-divider" />
-                    <button className="user-menu-item" onClick={() => { setShowUserMenu(false); logout(); }}>Sign out</button>
                   </div>
-                </>
+                  <div className="user-menu-divider" />
+                  <button className="user-menu-item" onClick={() => { setShowUserMenu(false); logout(); }}>Sign out</button>
+                </div>
               )}
             </div>
           ) : (

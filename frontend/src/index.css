@@ -1262,11 +1262,6 @@ body {
 
 /* ═══════════════════ User Menu Dropdown ═══════════════════ */
 .user-menu-wrap { position: relative; }
-.user-menu-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 999;
-}
 .user-menu {
   position: absolute;
   top: calc(100% + 8px);

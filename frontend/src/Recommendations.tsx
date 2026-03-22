@@ -38,6 +38,104 @@ export default function Recommendations() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const { recommendations, watchedTitles, genreProfile } = useMemo(() => {
+    if (!actresses.length) return { recommendations: [] as Recommendation[], watchedTitles: new Set<string>(), genreProfile: [] as string[] };
+
+    const watched = new Set<string>();
+    const ratedHigh = new Set<string>();
+    const genreCounts: Record<string, number> = {};
+    const likedActresses = new Set<string>();
+
+    for (const a of actresses) {
+      if (a.tier && TIER_WEIGHT[a.tier] >= 4) {
+        likedActresses.add(a._id);
+      }
+      genreCounts[a.genre] = (genreCounts[a.genre] || 0) + 1;
+      for (const d of a.dramas || []) {
+        if (d.watchStatus === "watched" || d.watchStatus === "watching") {
+          watched.add(d.title);
+        }
+        if (d.rating && d.rating >= 7) {
+          ratedHigh.add(d.title);
+        }
+        if (d.rating && d.rating >= 8) {
+          likedActresses.add(a._id);
+        }
+      }
+    }
+
+    const topGenres = Object.entries(genreCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([g]) => g);
+
+    const recMap: Record<string, Recommendation> = {};
+
+    for (const a of actresses) {
+      for (const d of a.dramas || []) {
+        const key = d.title;
+        if (!recMap[key]) {
+          recMap[key] = {
+            dramaTitle: d.title,
+            year: d.year,
+            poster: d.poster,
+            actress: { id: a._id, name: a.name, role: d.role, tier: a.tier },
+            reasons: [],
+            score: 0,
+          };
+        }
+
+        const rec = recMap[key];
+
+        if (a.tier && TIER_WEIGHT[a.tier] >= 4) {
+          const tierLabel = a.tier === "splus" ? "S+" : a.tier.toUpperCase();
+          const reason = `${a.name} is ${tierLabel}-tier`;
+          if (!rec.reasons.includes(reason)) {
+            rec.reasons.push(reason);
+            rec.score += TIER_WEIGHT[a.tier] * 2;
+          }
+        }
+
+        if (topGenres.includes(a.genre)) {
+          const reason = `Matches your ${a.genre} preference`;
+          if (!rec.reasons.includes(reason)) {
+            rec.reasons.push(reason);
+            rec.score += 2;
+          }
+        }
+
+        if (likedActresses.has(a._id) && !a.tier) {
+          const reason = `You rated ${a.name}'s other dramas highly`;
+          if (!rec.reasons.includes(reason)) {
+            rec.reasons.push(reason);
+            rec.score += 3;
+          }
+        }
+
+        if (d.year >= 2020) rec.score += 1;
+        if (d.year >= 2023) rec.score += 1;
+
+        if (watched.has(d.title)) rec.score -= 5;
+      }
+    }
+
+    const recs = Object.values(recMap)
+      .filter((r) => r.reasons.length > 0)
+      .sort((a, b) => b.score - a.score);
+
+    return {
+      recommendations: recs,
+      watchedTitles: watched,
+      genreProfile: topGenres,
+    };
+  }, [actresses]);
+
+  const filtered = useMemo(() => {
+    if (filter === "unwatched") return recommendations.filter((r) => !watchedTitles.has(r.dramaTitle));
+    if (filter === "top") return recommendations.filter((r) => r.score >= 8);
+    return recommendations;
+  }, [recommendations, filter, watchedTitles]);
+
   function sendMessage(text: string) {
     if (!text.trim() || streaming) return;
     const userMsg: ChatMessage = { role: "user", content: text.trim() };
@@ -73,109 +171,6 @@ export default function Recommendations() {
 
   if (loading) return <div className="loading-page"><div className="loading-spinner" /><span className="loading-text">Building recommendations...</span></div>;
   if (!actresses.length) return <div className="error-page"><span className="error-icon">!</span><span className="error-message">Could not load actresses</span><button className="error-retry" onClick={reload}>Try again</button></div>;
-
-  const { recommendations, watchedTitles, genreProfile } = useMemo(() => {
-    const watched = new Set<string>();
-    const ratedHigh = new Set<string>(); // dramas rated 7+
-    const genreCounts: Record<string, number> = {};
-    const likedActresses = new Set<string>(); // tier S+ / S / A or rated dramas 8+
-
-    // Build user profile
-    for (const a of actresses) {
-      if (a.tier && TIER_WEIGHT[a.tier] >= 4) {
-        likedActresses.add(a._id);
-      }
-      genreCounts[a.genre] = (genreCounts[a.genre] || 0) + 1;
-      for (const d of a.dramas || []) {
-        if (d.watchStatus === "watched" || d.watchStatus === "watching") {
-          watched.add(d.title);
-        }
-        if (d.rating && d.rating >= 7) {
-          ratedHigh.add(d.title);
-        }
-        if (d.rating && d.rating >= 8) {
-          likedActresses.add(a._id);
-        }
-      }
-    }
-
-    const topGenres = Object.entries(genreCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([g]) => g);
-
-    // Generate recommendations
-    const recMap: Record<string, Recommendation> = {};
-
-    for (const a of actresses) {
-      for (const d of a.dramas || []) {
-        const key = d.title;
-        if (!recMap[key]) {
-          recMap[key] = {
-            dramaTitle: d.title,
-            year: d.year,
-            poster: d.poster,
-            actress: { id: a._id, name: a.name, role: d.role, tier: a.tier },
-            reasons: [],
-            score: 0,
-          };
-        }
-
-        const rec = recMap[key];
-
-        // Reason: from a highly-ranked actress
-        if (a.tier && TIER_WEIGHT[a.tier] >= 4) {
-          const tierLabel = a.tier === "splus" ? "S+" : a.tier.toUpperCase();
-          const reason = `${a.name} is ${tierLabel}-tier`;
-          if (!rec.reasons.includes(reason)) {
-            rec.reasons.push(reason);
-            rec.score += TIER_WEIGHT[a.tier] * 2;
-          }
-        }
-
-        // Reason: genre matches your preference
-        if (topGenres.includes(a.genre)) {
-          const reason = `Matches your ${a.genre} preference`;
-          if (!rec.reasons.includes(reason)) {
-            rec.reasons.push(reason);
-            rec.score += 2;
-          }
-        }
-
-        // Reason: from an actress you rated highly
-        if (likedActresses.has(a._id) && !a.tier) {
-          const reason = `You rated ${a.name}'s other dramas highly`;
-          if (!rec.reasons.includes(reason)) {
-            rec.reasons.push(reason);
-            rec.score += 3;
-          }
-        }
-
-        // Bonus: newer dramas get a slight boost
-        if (d.year >= 2020) rec.score += 1;
-        if (d.year >= 2023) rec.score += 1;
-
-        // Already watched = lower priority but still show
-        if (watched.has(d.title)) rec.score -= 5;
-      }
-    }
-
-    const recs = Object.values(recMap)
-      .filter((r) => r.reasons.length > 0)
-      .sort((a, b) => b.score - a.score);
-
-    return {
-      recommendations: recs,
-      watchedTitles: watched,
-      genreProfile: topGenres,
-    };
-  }, [actresses]);
-
-  const filtered = useMemo(() => {
-    if (filter === "unwatched") return recommendations.filter((r) => !watchedTitles.has(r.dramaTitle));
-    if (filter === "top") return recommendations.filter((r) => r.score >= 8);
-    return recommendations;
-  }, [recommendations, filter, watchedTitles]);
 
   return (
     <div className="detail-page">
