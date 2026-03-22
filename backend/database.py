@@ -13,3 +13,10 @@ actresses_collection = db["actresses"]
 
 # Index for fast drama lookups (used by /api/dramas/:title and drama field updates)
 actresses_collection.create_index("dramas.title")
+
+# Per-user collections
+user_rankings_collection = db["user_rankings"]
+user_rankings_collection.create_index([("userId", 1), ("actressId", 1)], unique=True)
+
+user_drama_status_collection = db["user_drama_status"]
+user_drama_status_collection.create_index([("userId", 1), ("actressId", 1), ("dramaTitle", 1)], unique=True)

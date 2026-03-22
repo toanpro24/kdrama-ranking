@@ -5,3 +5,4 @@ pymongo==4.10.1
 pydantic==2.10.4
 python-dotenv==1.0.1
 anthropic==0.43.0
+firebase-admin==6.6.0
