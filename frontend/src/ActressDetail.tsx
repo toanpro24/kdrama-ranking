@@ -10,11 +10,19 @@ import "./index.css";
 export default function ActressDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { setActresses } = useActresses();
   const [actress, setActress] = useState<Actress | null>(null);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id || authLoading) return;
+    setLoading(true);
+    fetchActress(id)
+      .then((data) => { setActress(data); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [id, authLoading, user]);
 
   // Sync a drama field change to both local state and shared context
   const syncDrama = useCallback((dramaIndex: number, field: "rating" | "watchStatus", value: number | string | null) => {
@@ -32,12 +40,6 @@ export default function ActressDetail() {
     );
   }, [id, setActresses]);
 
-  useEffect(() => {
-    if (!id) return;
-    fetchActress(id)
-      .then((data) => { setActress(data); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [id]);
 
   if (loading) return <div className="loading-page"><div className="loading-spinner" /><span className="loading-text">Loading profile...</span></div>;
   if (!actress) return <div className="error-page"><span className="error-icon">!</span><span className="error-message">Actress not found</span><button className="error-retry" onClick={() => navigate(-1)}>Go back</button></div>;

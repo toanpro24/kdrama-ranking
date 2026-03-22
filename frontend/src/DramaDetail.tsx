@@ -30,18 +30,19 @@ interface DramaInfo {
 export default function DramaDetail() {
   const { title } = useParams<{ title: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { setActresses } = useActresses();
   const [drama, setDrama] = useState<DramaInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!title) return;
+    if (!title || authLoading) return;
+    setLoading(true);
     fetchDrama(title)
       .then((data) => { setDrama(data); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [title]);
+  }, [title, authLoading, user]);
 
   if (loading) return <div className="loading-page"><div className="loading-spinner" /><span className="loading-text">Loading drama...</span></div>;
   if (!drama) return <div className="error-page"><span className="error-icon">!</span><span className="error-message">Drama not found</span><button className="error-retry" onClick={() => navigate(-1)}>Go back</button></div>;
