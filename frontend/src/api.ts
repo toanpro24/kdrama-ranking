@@ -45,7 +45,12 @@ export async function fetchActresses(genre?: string, search?: string): Promise<A
   }
 }
 
-export async function createActress(data: { name: string; known: string; genre: string; year: number }): Promise<Actress | null> {
+export async function createActress(data: {
+  name: string; known: string; genre: string; year: number;
+  image?: string; birthDate?: string; birthPlace?: string; agency?: string;
+  dramas?: { title: string; year: number; role: string; poster?: string | null }[];
+  gallery?: string[];
+}): Promise<Actress | null> {
   try {
     const result = await request<Actress>(`${BASE}/actresses`, {
       method: "POST",
