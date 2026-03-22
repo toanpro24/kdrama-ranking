@@ -145,11 +145,64 @@ def _fetch_gallery_photos(person_id: int, name: str, target: int = 10) -> list[s
                     continue
                 if not src.startswith("http"):
                     src = "https:" + src
-                # Skip SVGs, icons, logos, flags, and tiny images
                 lower = src.lower()
                 if any(skip in lower for skip in [".svg", "icon", "logo", "flag", "commons-logo", "wiki"]):
                     continue
                 _add(src)
+        except Exception:
+            pass
+
+    # Source 4: Wikimedia Commons search
+    if len(gallery) < target:
+        try:
+            commons_params = urllib.parse.urlencode({
+                "action": "query", "format": "json",
+                "generator": "search", "gsrnamespace": "6",
+                "gsrsearch": f"{name} actress", "gsrlimit": "15",
+                "prop": "imageinfo", "iiprop": "url|size",
+                "iiurlwidth": "500",
+            })
+            commons_url = f"https://commons.wikimedia.org/w/api.php?{commons_params}"
+            req = urllib.request.Request(commons_url, headers={
+                "User-Agent": "KDramaRanking/1.0",
+            })
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                commons_data = json.loads(resp.read())
+            pages = commons_data.get("query", {}).get("pages", {})
+            for page in pages.values():
+                info = (page.get("imageinfo") or [{}])[0]
+                url = info.get("thumburl") or info.get("url", "")
+                if not url:
+                    continue
+                lower = url.lower()
+                if any(skip in lower for skip in [".svg", "icon", "logo", "flag", "map", "emblem"]):
+                    continue
+                # Only keep reasonably sized images
+                width = info.get("width", 0)
+                if width < 200:
+                    continue
+                _add(url)
+        except Exception:
+            pass
+
+    # Source 5: Google Custom Search Images (if configured)
+    if len(gallery) < target and GOOGLE_API_KEY and GOOGLE_CSE_ID:
+        try:
+            needed = target - len(gallery)
+            gparams = urllib.parse.urlencode({
+                "key": GOOGLE_API_KEY, "cx": GOOGLE_CSE_ID,
+                "q": f"{name} korean actress", "searchType": "image",
+                "num": min(needed, 10), "imgSize": "large",
+                "safe": "active",
+            })
+            gurl = f"https://www.googleapis.com/customsearch/v1?{gparams}"
+            req = urllib.request.Request(gurl, headers={"Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                gdata = json.loads(resp.read())
+            for item in gdata.get("items", []):
+                link = item.get("link", "")
+                if link:
+                    _add(link)
         except Exception:
             pass
 
@@ -247,6 +300,8 @@ def get_actress(actress_id: str, user=Depends(get_current_user)):
 
 TMDB_API_KEY = os.getenv("TMDB_API_KEY", "017bbf31bbe1016f0dca8bdd9be21ba4")
 TMDB_IMG = "https://image.tmdb.org/t/p/w500"
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
+GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID", "")
 
 
 def _tmdb_get(path: str, params: dict) -> dict:
@@ -362,6 +417,10 @@ def get_actress_details_from_tmdb(tmdb_id: int):
 # ── POST create actress (ObjectId = concurrent-safe, no race condition) ──
 @app.post("/api/actresses", status_code=201)
 def create_actress(actress: ActressCreate):
+    # Check for duplicate by name (case-insensitive)
+    existing = actresses_collection.find_one({"name": {"$regex": f"^{actress.name}$", "$options": "i"}})
+    if existing:
+        raise HTTPException(status_code=409, detail=f"{actress.name} is already in the database")
     doc = actress.model_dump()
     result = actresses_collection.insert_one(doc)
     doc["_id"] = str(result.inserted_id)
