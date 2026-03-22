@@ -76,10 +76,26 @@ def _merge_user_data(docs: list[dict], user_id: str | None) -> list[dict]:
 
 
 # ── Lifespan (replaces deprecated @app.on_event) ──
+POSTER_FIXES = {
+    "Eve": "https://image.tmdb.org/t/p/w500/6xvIRR50lDzFRWLFCAwSzEkoEu3.jpg",
+}
+
+
+def _apply_poster_fixes():
+    """Fix any known incorrect drama posters."""
+    for title, correct_url in POSTER_FIXES.items():
+        actresses_collection.update_many(
+            {"dramas.title": title},
+            {"$set": {"dramas.$[d].poster": correct_url}},
+            array_filters=[{"d.title": title}],
+        )
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     if actresses_collection.count_documents({}) == 0:
         seed()
+    _apply_poster_fixes()
     yield
 
 
