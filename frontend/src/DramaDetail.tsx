@@ -87,10 +87,11 @@ export default function DramaDetail() {
                   key={ws}
                   className={`watch-btn ${drama.watchStatus === ws ? "active" : ""} ws-${ws} ${!user ? "disabled" : ""}`}
                   disabled={!user}
-                  onClick={() => {
+                  onClick={async () => {
                     if (!user || !drama.actressId) return;
                     const newStatus = drama.watchStatus === ws ? null : ws;
-                    updateWatchStatus(drama.actressId, drama.title, newStatus);
+                    const ok = await updateWatchStatus(drama.actressId, drama.title, newStatus);
+                    if (!ok) return;
                     setDrama((prev) => prev ? { ...prev, watchStatus: newStatus } : prev);
                     const aid = drama.actressId;
                     setActresses((prev) =>

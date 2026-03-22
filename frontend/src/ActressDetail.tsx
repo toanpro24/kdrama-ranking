@@ -185,12 +185,12 @@ export default function ActressDetail() {
                   <span
                     key={s}
                     className={`rating-star ${(drama.rating || 0) > s ? "filled" : ""} ${!user ? "disabled" : ""}`}
-                    onClick={() => {
+                    onClick={async () => {
                       if (!user) return;
                       const origIndex = allDramas.indexOf(drama);
                       const newRating = s + 1 === drama.rating ? null : s + 1;
-                      rateDrama(actress._id, drama.title, newRating);
-                      syncDrama(origIndex, "rating", newRating);
+                      const ok = await rateDrama(actress._id, drama.title, newRating);
+                      if (ok) syncDrama(origIndex, "rating", newRating);
                     }}
                   >
                     ★
@@ -204,12 +204,12 @@ export default function ActressDetail() {
                     key={ws}
                     className={`watch-btn ${drama.watchStatus === ws ? "active" : ""} ws-${ws} ${!user ? "disabled" : ""}`}
                     disabled={!user}
-                    onClick={() => {
+                    onClick={async () => {
                       if (!user) return;
                       const origIndex = allDramas.indexOf(drama);
                       const newStatus = drama.watchStatus === ws ? null : ws;
-                      updateWatchStatus(actress._id, drama.title, newStatus);
-                      syncDrama(origIndex, "watchStatus", newStatus);
+                      const ok = await updateWatchStatus(actress._id, drama.title, newStatus);
+                      if (ok) syncDrama(origIndex, "watchStatus", newStatus);
                     }}
                   >
                     {ws === "watched" ? "Watched" : ws === "watching" ? "Watching" : ws === "plan_to_watch" ? "Plan" : "Dropped"}

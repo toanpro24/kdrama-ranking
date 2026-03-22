@@ -123,7 +123,7 @@ export async function updateWatchStatus(actressId: string, dramaTitle: string, w
     });
     return true;
   } catch (e: any) {
-    toast.error("Failed to update watch status");
+    toast.error(e?.message || "Failed to update watch status");
     return false;
   }
 }
@@ -136,7 +136,7 @@ export async function rateDrama(actressId: string, dramaTitle: string, rating: n
     });
     return true;
   } catch (e: any) {
-    toast.error("Failed to update rating");
+    toast.error(e?.message || "Failed to update rating");
     return false;
   }
 }
