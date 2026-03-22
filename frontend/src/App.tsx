@@ -26,10 +26,62 @@ export default function App() {
   const [sortBy, setSortBy] = useState<"default" | "name" | "year" | "genre">("default");
   const tiersRef = useRef<HTMLElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const scrollRAF = useRef<number | null>(null);
 
   useEffect(() => {
     setTimeout(() => setHeroVisible(true), 100);
     setTimeout(() => setTiersVisible(true), 500);
+  }, []);
+
+  // Auto-scroll when dragging near viewport edges
+  useEffect(() => {
+    const EDGE_SIZE = 80;
+    const MAX_SPEED = 18;
+
+    function handleDragOver(e: DragEvent) {
+      const y = e.clientY;
+      const h = window.innerHeight;
+
+      if (y < EDGE_SIZE) {
+        const speed = MAX_SPEED * (1 - y / EDGE_SIZE);
+        startAutoScroll(-speed);
+      } else if (y > h - EDGE_SIZE) {
+        const speed = MAX_SPEED * (1 - (h - y) / EDGE_SIZE);
+        startAutoScroll(speed);
+      } else {
+        stopAutoScroll();
+      }
+    }
+
+    function startAutoScroll(speed: number) {
+      stopAutoScroll();
+      function tick() {
+        window.scrollBy(0, speed);
+        scrollRAF.current = requestAnimationFrame(tick);
+      }
+      scrollRAF.current = requestAnimationFrame(tick);
+    }
+
+    function stopAutoScroll() {
+      if (scrollRAF.current !== null) {
+        cancelAnimationFrame(scrollRAF.current);
+        scrollRAF.current = null;
+      }
+    }
+
+    function handleDragEnd() {
+      stopAutoScroll();
+    }
+
+    document.addEventListener("dragover", handleDragOver);
+    document.addEventListener("dragend", handleDragEnd);
+    document.addEventListener("drop", handleDragEnd);
+    return () => {
+      stopAutoScroll();
+      document.removeEventListener("dragover", handleDragOver);
+      document.removeEventListener("dragend", handleDragEnd);
+      document.removeEventListener("drop", handleDragEnd);
+    };
   }, []);
 
   useEffect(() => {
