@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import type { Actress, WatchStatus } from "./types";
-import { rateDrama, updateWatchStatus } from "./api";
+import { fetchActress, rateDrama, updateWatchStatus } from "./api";
 import { TIER_MAP } from "./constants";
 import { useAuth } from "./AuthContext";
 import "./index.css";
-
-const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 export default function ActressDetail() {
   const { id } = useParams<{ id: string }>();
@@ -17,8 +15,8 @@ export default function ActressDetail() {
   const [lightbox, setLightbox] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${BASE}/actresses/${id}`)
-      .then((r) => r.json())
+    if (!id) return;
+    fetchActress(id)
       .then((data) => { setActress(data); setLoading(false); })
       .catch(() => setLoading(false));
   }, [id]);

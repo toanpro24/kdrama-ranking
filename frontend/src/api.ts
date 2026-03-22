@@ -45,6 +45,14 @@ export async function fetchActresses(genre?: string, search?: string): Promise<A
   }
 }
 
+export async function fetchActress(id: string): Promise<Actress | null> {
+  try {
+    return await request<Actress>(`${BASE}/actresses/${id}`);
+  } catch {
+    return null;
+  }
+}
+
 export async function createActress(data: {
   name: string; known: string; genre: string; year: number;
   image?: string; birthDate?: string; birthPlace?: string; agency?: string;
