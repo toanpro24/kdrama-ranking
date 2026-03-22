@@ -3,7 +3,7 @@ type ToastType = "success" | "error" | "info";
 let container: HTMLDivElement | null = null;
 
 function getContainer(): HTMLDivElement {
-  if (container) return container;
+  if (container && container.isConnected) return container;
   container = document.createElement("div");
   container.className = "toast-container";
   document.body.appendChild(container);
