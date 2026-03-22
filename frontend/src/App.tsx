@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import html2canvas from "html2canvas";
+import { toPng } from "html-to-image";
 import type { Actress } from "./types";
 import { createActress, updateTier, deleteActress, resetData } from "./api";
 import { TIERS, GENRES } from "./constants";
@@ -175,23 +175,29 @@ export default function App() {
 
   const handleShareTierList = useCallback(async () => {
     if (!tiersRef.current) return;
+    const el = tiersRef.current;
+    // Temporarily disable animations and boost subtle backgrounds for capture
+    const style = document.createElement("style");
+    style.textContent = `
+      .tiers-section * { animation: none !important; }
+      .tier-row { background: rgba(255,255,255,0.06) !important; border-color: rgba(255,255,255,0.1) !important; }
+      .actress-card { background: rgba(255,255,255,0.1) !important; }
+    `;
+    document.head.appendChild(style);
     try {
-      const canvas = await html2canvas(tiersRef.current, {
+      const dataUrl = await toPng(el, {
         backgroundColor: "#0a0a0f",
-        scale: 2,
-        useCORS: true,
+        pixelRatio: 2,
+        cacheBust: true,
       });
-      canvas.toBlob((blob) => {
-        if (!blob) return;
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.download = "my-kdrama-tier-list.png";
-        link.href = url;
-        link.click();
-        URL.revokeObjectURL(url);
-      });
+      const link = document.createElement("a");
+      link.download = "my-kdrama-tier-list.png";
+      link.href = dataUrl;
+      link.click();
     } catch (err) {
       console.error("Screenshot failed:", err);
+    } finally {
+      document.head.removeChild(style);
     }
   }, []);
 
