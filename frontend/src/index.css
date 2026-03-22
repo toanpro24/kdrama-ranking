@@ -1192,3 +1192,66 @@ body {
   .chat-panel { width: calc(100vw - 32px); right: -8px; max-height: 70vh; }
   .chat-toggle { width: 48px; height: 48px; font-size: 15px; }
 }
+
+/* ═══════════════════ Auth UI ═══════════════════ */
+.user-btn {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 4px !important;
+  border-radius: 20px !important;
+  background: rgba(255,255,255,0.08) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.user-btn:hover { background: rgba(255,255,255,0.15) !important; }
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.user-name {
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+  font-weight: 500;
+}
+
+.google-btn {
+  background: linear-gradient(135deg, #E500A4, #FF2942) !important;
+  font-weight: 600 !important;
+}
+
+.guest-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, rgba(229, 0, 164, 0.1), rgba(255, 41, 66, 0.08));
+  border-bottom: 1px solid rgba(229, 0, 164, 0.2);
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+}
+.guest-banner-btn {
+  background: linear-gradient(135deg, #E500A4, #FF2942);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.guest-banner-btn:hover { opacity: 0.9; }
+
+@media (max-width: 768px) {
+  .guest-banner { flex-direction: column; gap: 8px; text-align: center; padding: 10px 16px; }
+  .user-name { display: none; }
+}
+@media (max-width: 480px) {
+  .guest-banner span { font-size: 11px; }
+}

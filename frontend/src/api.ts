@@ -4,14 +4,27 @@ import { toast } from "./toast";
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 const ADMIN_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
 
-function adminHeaders(): Record<string, string> {
+// Auth token getter — set by AuthContext on mount
+let _getToken: () => Promise<string | null> = async () => null;
+export function setTokenGetter(fn: () => Promise<string | null>) {
+  _getToken = fn;
+}
+
+async function authHeaders(): Promise<Record<string, string>> {
   const h: Record<string, string> = { "Content-Type": "application/json" };
+  const token = await _getToken();
+  if (token) h["Authorization"] = `Bearer ${token}`;
   if (ADMIN_KEY) h["X-API-Key"] = ADMIN_KEY;
   return h;
 }
 
 async function request<T>(url: string, options?: RequestInit): Promise<T> {
-  const res = await fetch(url, options);
+  const headers = await authHeaders();
+  const merged: RequestInit = {
+    ...options,
+    headers: { ...headers, ...(options?.headers as Record<string, string> || {}) },
+  };
+  const res = await fetch(url, merged);
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     const msg = body.detail || `Request failed (${res.status})`;
@@ -36,7 +49,6 @@ export async function createActress(data: { name: string; known: string; genre: 
   try {
     const result = await request<Actress>(`${BASE}/actresses`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
     toast.success(`Added ${data.name}`);
@@ -51,7 +63,6 @@ export async function updateTier(id: string, tier: string | null): Promise<boole
   try {
     await request(`${BASE}/actresses/${id}/tier`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ tier }),
     });
     return true;
@@ -63,7 +74,7 @@ export async function updateTier(id: string, tier: string | null): Promise<boole
 
 export async function deleteActress(id: string): Promise<boolean> {
   try {
-    await request(`${BASE}/actresses/${id}`, { method: "DELETE", headers: adminHeaders() });
+    await request(`${BASE}/actresses/${id}`, { method: "DELETE" });
     return true;
   } catch (e: any) {
     toast.error("Failed to delete actress");
@@ -82,7 +93,7 @@ export async function fetchStats(): Promise<Stats | null> {
 
 export async function resetData(): Promise<boolean> {
   try {
-    await request(`${BASE}/reset`, { method: "POST", headers: adminHeaders() });
+    await request(`${BASE}/reset`, { method: "POST" });
     toast.success("Data reset to defaults");
     return true;
   } catch (e: any) {
@@ -95,7 +106,6 @@ export async function updateWatchStatus(actressId: string, dramaTitle: string, w
   try {
     await request(`${BASE}/actresses/${actressId}/dramas/${encodeURIComponent(dramaTitle)}/watch-status`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ watchStatus }),
     });
     return true;
@@ -109,7 +119,6 @@ export async function rateDrama(actressId: string, dramaTitle: string, rating: n
   try {
     await request(`${BASE}/actresses/${actressId}/dramas/${encodeURIComponent(dramaTitle)}/rating`, {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ rating }),
     });
     return true;
@@ -126,9 +135,10 @@ export async function askAI(
   onError: (err: string) => void,
 ): Promise<void> {
   try {
+    const headers = await authHeaders();
     const res = await fetch(`${BASE}/chat`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers,
       body: JSON.stringify({ messages }),
     });
     if (!res.ok) {

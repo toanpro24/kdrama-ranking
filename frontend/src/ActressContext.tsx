@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import type { Actress } from "./types";
 import { fetchActresses } from "./api";
+import { useAuth } from "./AuthContext";
 
 interface ActressContextValue {
   actresses: Actress[];
@@ -13,6 +14,7 @@ interface ActressContextValue {
 const ActressContext = createContext<ActressContextValue | null>(null);
 
 export function ActressProvider({ children }: { children: React.ReactNode }) {
+  const { user, loading: authLoading } = useAuth();
   const [actresses, setActresses] = useState<Actress[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -21,17 +23,14 @@ export function ActressProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     setError(false);
     const data = await fetchActresses();
-    if (data.length === 0 && actresses.length === 0) {
-      // Could be a real empty DB or a failed fetch — fetchActresses returns [] on error
-      // We check if this is the initial load with no prior data
-    }
     setActresses(data);
     setLoading(false);
   }, []);
 
+  // Reload when auth state changes (login/logout)
   useEffect(() => {
-    reload();
-  }, [reload]);
+    if (!authLoading) reload();
+  }, [user, authLoading, reload]);
 
   return (
     <ActressContext.Provider value={{ actresses, loading, error, setActresses, reload }}>

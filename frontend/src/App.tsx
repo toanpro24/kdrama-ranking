@@ -5,11 +5,13 @@ import type { Actress, Stats } from "./types";
 import { createActress, updateTier, deleteActress, fetchStats, resetData } from "./api";
 import { TIERS, GENRES } from "./constants";
 import { useActresses } from "./ActressContext";
+import { useAuth } from "./AuthContext";
 import ActressCard from "./ActressCard";
 import "./index.css";
 
 export default function App() {
   const navigate = useNavigate();
+  const { user, signInWithGoogle, logout } = useAuth();
   const { actresses, loading, setActresses, reload } = useActresses();
   const [search, setSearch] = useState("");
   const [genreFilter, setGenreFilter] = useState("All");
@@ -196,8 +198,23 @@ export default function App() {
           <button onClick={handleShareTierList} className="nav-btn share-btn">📷 Share Tier List</button>
           <button onClick={handleReset} className="nav-btn">↺ Reset</button>
           <button onClick={() => setShowAdd(!showAdd)} className="nav-btn primary">{showAdd ? "✕ Close" : "+ Add Actress"}</button>
+          {user ? (
+            <button className="nav-btn user-btn" onClick={logout} title="Sign out">
+              <img className="user-avatar" src={user.photoURL || ""} alt="" referrerPolicy="no-referrer" />
+              <span className="user-name">{user.displayName?.split(" ")[0]}</span>
+            </button>
+          ) : (
+            <button className="nav-btn primary google-btn" onClick={signInWithGoogle}>Sign in</button>
+          )}
         </div>
       </nav>
+
+      {!user && (
+        <div className="guest-banner">
+          <span>Sign in with Google to save your personal tier rankings, ratings, and watch list</span>
+          <button className="guest-banner-btn" onClick={signInWithGoogle}>Sign in with Google</button>
+        </div>
+      )}
 
       {/* Add Form */}
       {showAdd && (

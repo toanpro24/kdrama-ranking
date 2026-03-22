@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { AuthProvider } from './AuthContext'
 import { ActressProvider } from './ActressContext'
 import App from './App'
 import ActressDetail from './ActressDetail'
@@ -12,6 +13,7 @@ import Recommendations from './Recommendations'
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
+      <AuthProvider>
       <ActressProvider>
         <Routes>
           <Route path="/" element={<App />} />
@@ -22,6 +24,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/recommendations" element={<Recommendations />} />
         </Routes>
       </ActressProvider>
+      </AuthProvider>
     </BrowserRouter>
   </StrictMode>,
 )
