@@ -224,20 +224,9 @@ def _backfill_galleries():
     print(f"Backfilling gallery photos for {len(missing)} actresses...")
     for doc in missing:
         name = doc["name"]
+        known_drama = doc.get("known", "")
         try:
-            data = _tmdb_get("/search/person", {"query": name, "language": "en-US"})
-            person_id = None
-            for p in data.get("results", []):
-                if p.get("known_for_department") != "Acting":
-                    continue
-                for kf in p.get("known_for", []):
-                    if kf.get("original_language") == "ko":
-                        person_id = p["id"]
-                        break
-                if person_id:
-                    break
-                person_id = p["id"]
-                break
+            person_id = _find_tmdb_person(name, known_drama=known_drama)
             if not person_id:
                 continue
             gallery = _fetch_gallery_photos(person_id, name)
@@ -728,17 +717,63 @@ def reset_data():
     return {"message": "Data reset to defaults"}
 
 
-def _find_tmdb_person(name: str) -> int | None:
-    """Search TMDB for a Korean actress by name."""
+def _find_tmdb_person(name: str, known_drama: str | None = None) -> int | None:
+    """Search TMDB for a Korean actress by name.
+
+    If known_drama is provided, cross-reference against each result's known_for
+    credits to pick the correct person (avoids wrong matches for common names).
+    """
     data = _tmdb_get("/search/person", {"query": name, "language": "en-US"})
-    for p in data.get("results", []):
-        if p.get("known_for_department") != "Acting":
-            continue
+    actors = [p for p in data.get("results", []) if p.get("known_for_department") == "Acting"]
+
+    if not actors:
+        return None
+
+    # If we have a known drama, try to match against known_for titles
+    if known_drama:
+        known_lower = known_drama.lower()
+        for p in actors:
+            kf_titles = []
+            for kf in p.get("known_for", []):
+                kf_titles.append(kf.get("name", "").lower())
+                kf_titles.append(kf.get("original_name", "").lower())
+                kf_titles.append(kf.get("title", "").lower())
+                kf_titles.append(kf.get("original_title", "").lower())
+            if known_lower in kf_titles:
+                return p["id"]
+
+        # Fuzzy: check if known drama is a substring of any known_for title
+        for p in actors:
+            for kf in p.get("known_for", []):
+                for field in ("name", "original_name", "title", "original_title"):
+                    val = kf.get(field, "").lower()
+                    if val and (known_lower in val or val in known_lower):
+                        return p["id"]
+
+        # Still no match — try fetching TV credits for each candidate (up to 3)
+        # and check if their credits include the known drama
+        import time
+        for p in actors[:3]:
+            try:
+                credits = _tmdb_get(f"/person/{p['id']}/tv_credits", {"language": "en-US"})
+                credit_titles = set()
+                for c in credits.get("cast", []):
+                    credit_titles.add(c.get("name", "").lower())
+                    credit_titles.add(c.get("original_name", "").lower())
+                if known_lower in credit_titles:
+                    return p["id"]
+                time.sleep(0.2)
+            except Exception:
+                continue
+
+    # Fallback: first actor with Korean credits
+    for p in actors:
         for kf in p.get("known_for", []):
             if kf.get("original_language") == "ko":
                 return p["id"]
-        return p["id"]
-    return None
+
+    # Last resort: first actor result
+    return actors[0]["id"]
 
 
 def _fetch_tmdb_dramas(person_id: int) -> list[dict]:
@@ -772,8 +807,9 @@ def refresh_all_data():
 
     for doc in actresses:
         name = doc["name"]
+        known_drama = doc.get("known", "")
         try:
-            person_id = _find_tmdb_person(name)
+            person_id = _find_tmdb_person(name, known_drama=known_drama)
             if not person_id:
                 results["failed"].append(f"{name}: not found on TMDB")
                 continue
