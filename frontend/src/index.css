@@ -850,7 +850,10 @@ select.add-input option { background: #161622; color: #fff; }
   color: #fff; margin: 20px 0;
 }
 .timeline-filters {
-  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px;
+  display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; align-items: center;
+}
+.timeline-tabs {
+  display: flex; gap: 6px; margin-right: 8px;
 }
 .timeline-container { position: relative; padding-left: 40px; }
 .timeline-line {

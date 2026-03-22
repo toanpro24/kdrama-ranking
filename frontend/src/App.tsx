@@ -297,7 +297,7 @@ export default function App() {
           <button onClick={() => navigate("/")} className="nav-tab active">⚡ Tier List</button>
           <button onClick={() => navigate("/stats")} className="nav-tab">📊 Stats</button>
           <button onClick={() => navigate("/compare")} className="nav-tab">⚔ Compare</button>
-          <button onClick={() => navigate("/timeline")} className="nav-tab">📅 Timeline</button>
+          <button onClick={() => navigate("/timeline")} className="nav-tab">🎬 Browse Dramas</button>
           <button onClick={() => navigate("/recommendations")} className="nav-tab">💡 For You</button>
           <button onClick={() => navigate("/watchlist")} className="nav-tab">📺 Watch List</button>
         </div>

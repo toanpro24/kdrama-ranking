@@ -15,6 +15,7 @@ export default function Timeline() {
   const navigate = useNavigate();
   const { actresses, loading, reload } = useActresses();
   const [filterActress, setFilterActress] = useState<string>("");
+  const [tab, setTab] = useState<"drama" | "show">("drama");
 
   const dramasByYear = useMemo(() => {
     if (!actresses.length) return {} as Record<number, TimelineDrama[]>;
@@ -25,6 +26,8 @@ export default function Timeline() {
 
     for (const a of filtered) {
       for (const d of a.dramas || []) {
+        const cat = (d as { category?: string }).category || "drama";
+        if (cat !== tab) continue;
         if (!map[d.title]) {
           map[d.title] = { title: d.title, year: d.year, poster: d.poster, actresses: [] };
         }
@@ -41,7 +44,7 @@ export default function Timeline() {
       grouped[d.year].push(d);
     }
     return grouped;
-  }, [actresses, filterActress]);
+  }, [actresses, filterActress, tab]);
 
   const years = Object.keys(dramasByYear).map(Number).sort((a, b) => b - a);
 
@@ -51,9 +54,13 @@ export default function Timeline() {
   return (
     <div className="detail-page">
       <button className="detail-back" onClick={() => navigate(-1)}>&#x2190; Back</button>
-      <h1 className="timeline-title">Drama Timeline</h1>
+      <h1 className="timeline-title">Browse {tab === "drama" ? "K-Dramas" : "TV Shows"}</h1>
 
       <div className="timeline-filters">
+        <div className="timeline-tabs">
+          <button className={`sort-pill ${tab === "drama" ? "active" : ""}`} onClick={() => setTab("drama")}>K-Dramas</button>
+          <button className={`sort-pill ${tab === "show" ? "active" : ""}`} onClick={() => setTab("show")}>TV Shows</button>
+        </div>
         <ActressSelect
           actresses={actresses}
           value={filterActress}

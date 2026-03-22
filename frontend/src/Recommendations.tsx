@@ -26,6 +26,7 @@ export default function Recommendations() {
   const navigate = useNavigate();
   const { actresses, loading, reload } = useActresses();
   const [filter, setFilter] = useState<"all" | "unwatched" | "top">("all");
+  const [tab, setTab] = useState<"drama" | "show">("drama");
 
   // Chat state
   const [chatOpen, setChatOpen] = useState(false);
@@ -52,6 +53,8 @@ export default function Recommendations() {
       }
       genreCounts[a.genre] = (genreCounts[a.genre] || 0) + 1;
       for (const d of a.dramas || []) {
+        const cat = (d as { category?: string }).category || "drama";
+        if (cat !== tab) continue;
         if (d.watchStatus === "watched" || d.watchStatus === "watching") {
           watched.add(d.title);
         }
@@ -73,6 +76,8 @@ export default function Recommendations() {
 
     for (const a of actresses) {
       for (const d of a.dramas || []) {
+        const cat = (d as { category?: string }).category || "drama";
+        if (cat !== tab) continue;
         const key = d.title;
         if (!recMap[key]) {
           recMap[key] = {
@@ -128,7 +133,7 @@ export default function Recommendations() {
       watchedTitles: watched,
       genreProfile: topGenres,
     };
-  }, [actresses]);
+  }, [actresses, tab]);
 
   const filtered = useMemo(() => {
     if (filter === "unwatched") return recommendations.filter((r) => !watchedTitles.has(r.dramaTitle));
@@ -175,13 +180,19 @@ export default function Recommendations() {
   return (
     <div className="detail-page">
       <button className="detail-back" onClick={() => navigate(-1)}>&#x2190; Back</button>
-      <h1 className="recs-title">Drama Recommendations</h1>
+      <h1 className="recs-title">{tab === "drama" ? "K-Drama" : "TV Show"} Recommendations</h1>
       <p className="recs-subtitle">
         Based on your tier rankings, ratings, and genre preferences
         {genreProfile.length > 0 && (
           <span className="recs-profile"> — you like {genreProfile.join(", ")}</span>
         )}
       </p>
+
+      <div className="recs-filters">
+        <button className={`sort-pill ${tab === "drama" ? "active" : ""}`} onClick={() => setTab("drama")}>K-Dramas</button>
+        <button className={`sort-pill ${tab === "show" ? "active" : ""}`} onClick={() => setTab("show")}>TV Shows</button>
+        <span style={{ width: 1, height: 20, background: "#333", display: "inline-block" }} />
+      </div>
 
       <div className="recs-filters">
         {(["all", "unwatched", "top"] as const).map((f) => (
