@@ -1,10 +1,11 @@
+import asyncio
 import json
 import os
 import urllib.parse
-import urllib.request
 from contextlib import asynccontextmanager
 
 import anthropic
+import httpx
 from bson import ObjectId
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
@@ -96,10 +97,11 @@ def _apply_poster_fixes():
         )
 
 
-def _fetch_gallery_photos(person_id: int, name: str, target: int = 10) -> list[str]:
+async def _fetch_gallery_photos(person_id: int, name: str, target: int = 10) -> list[str]:
     """Gather photos from multiple sources: TMDB profiles, TMDB tagged images, Wikipedia."""
     gallery: list[str] = []
     seen: set[str] = set()
+    client = _get_http_client()
 
     def _add(url: str):
         if url not in seen and len(gallery) < target:
@@ -108,7 +110,7 @@ def _fetch_gallery_photos(person_id: int, name: str, target: int = 10) -> list[s
 
     # Source 1: TMDB profile photos
     try:
-        images_data = _tmdb_get(f"/person/{person_id}/images", {})
+        images_data = await _tmdb_get(f"/person/{person_id}/images", {})
         profiles = images_data.get("profiles", [])
         profiles.sort(key=lambda p: p.get("vote_average", 0), reverse=True)
         for p in profiles:
@@ -120,7 +122,7 @@ def _fetch_gallery_photos(person_id: int, name: str, target: int = 10) -> list[s
     # Source 2: TMDB tagged images (stills from shows, not posters)
     if len(gallery) < target:
         try:
-            tagged = _tmdb_get(f"/person/{person_id}/tagged_images", {"page": 1})
+            tagged = await _tmdb_get(f"/person/{person_id}/tagged_images", {"page": 1})
             stills = [t for t in tagged.get("results", [])
                       if t.get("media_type") == "tv" and t.get("image_type") == "backdrop"
                       and t.get("file_path")]
@@ -135,12 +137,11 @@ def _fetch_gallery_photos(person_id: int, name: str, target: int = 10) -> list[s
         try:
             wiki_name = name.replace(" ", "_")
             wiki_url = f"https://en.wikipedia.org/api/rest_v1/page/media-list/{urllib.parse.quote(wiki_name)}"
-            req = urllib.request.Request(wiki_url, headers={
+            resp = await client.get(wiki_url, headers={
                 "Accept": "application/json",
                 "User-Agent": "KDramaRanking/1.0",
             })
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                wiki_data = json.loads(resp.read())
+            wiki_data = resp.json()
             for item in wiki_data.get("items", []):
                 src = item.get("srcset", [{}])[0].get("src", "") if item.get("srcset") else ""
                 if not src:
@@ -167,11 +168,8 @@ def _fetch_gallery_photos(person_id: int, name: str, target: int = 10) -> list[s
                 "iiurlwidth": "500",
             })
             commons_url = f"https://commons.wikimedia.org/w/api.php?{commons_params}"
-            req = urllib.request.Request(commons_url, headers={
-                "User-Agent": "KDramaRanking/1.0",
-            })
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                commons_data = json.loads(resp.read())
+            resp = await client.get(commons_url, headers={"User-Agent": "KDramaRanking/1.0"})
+            commons_data = resp.json()
             pages = commons_data.get("query", {}).get("pages", {})
             for page in pages.values():
                 info = (page.get("imageinfo") or [{}])[0]
@@ -181,7 +179,6 @@ def _fetch_gallery_photos(person_id: int, name: str, target: int = 10) -> list[s
                 lower = url.lower()
                 if any(skip in lower for skip in [".svg", "icon", "logo", "flag", "map", "emblem"]):
                     continue
-                # Only keep reasonably sized images
                 width = info.get("width", 0)
                 if width < 200:
                     continue
@@ -200,9 +197,8 @@ def _fetch_gallery_photos(person_id: int, name: str, target: int = 10) -> list[s
                 "safe": "active",
             })
             gurl = f"https://www.googleapis.com/customsearch/v1?{gparams}"
-            req = urllib.request.Request(gurl, headers={"Accept": "application/json"})
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                gdata = json.loads(resp.read())
+            resp = await client.get(gurl, headers={"Accept": "application/json"})
+            gdata = resp.json()
             for item in gdata.get("items", []):
                 link = item.get("link", "")
                 if link:
@@ -213,7 +209,7 @@ def _fetch_gallery_photos(person_id: int, name: str, target: int = 10) -> list[s
     return gallery
 
 
-def _backfill_galleries():
+async def _backfill_galleries():
     """Fetch gallery photos for actresses with fewer than 10."""
     missing = list(actresses_collection.find({
         "$or": [
@@ -224,31 +220,43 @@ def _backfill_galleries():
     }))
     if not missing:
         return
-    import time
     print(f"Backfilling gallery photos for {len(missing)} actresses...")
     for doc in missing:
         name = doc["name"]
         known_drama = doc.get("known", "")
         try:
-            person_id = _find_tmdb_person(name, known_drama=known_drama)
+            person_id = await _find_tmdb_person(name, known_drama=known_drama)
             if not person_id:
                 continue
-            gallery = _fetch_gallery_photos(person_id, name)
+            gallery = await _fetch_gallery_photos(person_id, name)
             if gallery:
                 actresses_collection.update_one({"_id": doc["_id"]}, {"$set": {"gallery": gallery}})
                 print(f"  {name}: {len(gallery)} photos")
-            time.sleep(0.3)
+            await asyncio.sleep(0.3)
         except Exception as e:
             print(f"  Error fetching gallery for {name}: {e}")
 
 
+_http_client: httpx.AsyncClient | None = None
+
+
+def _get_http_client() -> httpx.AsyncClient:
+    if _http_client is None:
+        raise RuntimeError("HTTP client not initialized")
+    return _http_client
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    global _http_client
+    _http_client = httpx.AsyncClient(timeout=15, follow_redirects=True)
     if actresses_collection.count_documents({}) == 0:
         seed()
     _apply_poster_fixes()
-    _backfill_galleries()
+    await _backfill_galleries()
     yield
+    await _http_client.aclose()
+    _http_client = None
 
 
 limiter = Limiter(key_func=get_remote_address)
@@ -300,23 +308,24 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
 GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID", "")
 
 
-def _tmdb_get(path: str, params: dict) -> dict:
+async def _tmdb_get(path: str, params: dict) -> dict:
     if not TMDB_API_KEY:
         raise HTTPException(status_code=503, detail="TMDB_API_KEY not configured")
     params["api_key"] = TMDB_API_KEY
     url = f"https://api.themoviedb.org/3{path}?{urllib.parse.urlencode(params)}"
-    req = urllib.request.Request(url, headers={"Accept": "application/json"})
-    with urllib.request.urlopen(req, timeout=10) as resp:
-        return json.loads(resp.read())
+    client = _get_http_client()
+    resp = await client.get(url, headers={"Accept": "application/json"})
+    resp.raise_for_status()
+    return resp.json()
 
 
 @app.get("/api/search-actress")
 @limiter.limit("15/minute")
-def search_actress_online(request: Request, q: str):
+async def search_actress_online(request: Request, q: str):
     """Search TMDB for a Korean actress and return structured data."""
     if not q or len(q) < 2:
         return []
-    data = _tmdb_get("/search/person", {"query": q, "language": "en-US"})
+    data = await _tmdb_get("/search/person", {"query": q, "language": "en-US"})
     results = []
     for p in data.get("results", [])[:8]:
         if p.get("known_for_department") != "Acting":
@@ -347,10 +356,10 @@ def search_actress_online(request: Request, q: str):
 
 @app.get("/api/search-actress/{tmdb_id}")
 @limiter.limit("10/minute")
-def get_actress_details_from_tmdb(request: Request, tmdb_id: int):
+async def get_actress_details_from_tmdb(request: Request, tmdb_id: int):
     """Fetch full actress details + Korean drama credits from TMDB."""
-    person = _tmdb_get(f"/person/{tmdb_id}", {"language": "en-US"})
-    credits = _tmdb_get(f"/person/{tmdb_id}/tv_credits", {"language": "en-US"})
+    person = await _tmdb_get(f"/person/{tmdb_id}", {"language": "en-US"})
+    credits = await _tmdb_get(f"/person/{tmdb_id}/tv_credits", {"language": "en-US"})
 
     image = f"{TMDB_IMG}{person['profile_path']}" if person.get("profile_path") else None
     birth_date = person.get("birthday")
@@ -400,7 +409,7 @@ def get_actress_details_from_tmdb(request: Request, tmdb_id: int):
         top_genre = our_genres.get(top, "Romance")
 
     # Fetch gallery photos from multiple sources
-    gallery = _fetch_gallery_photos(tmdb_id, person.get("name", ""))
+    gallery = await _fetch_gallery_photos(tmdb_id, person.get("name", ""))
 
     return {
         "name": person.get("name", ""),
@@ -541,7 +550,7 @@ def get_stats(user=Depends(get_current_user)):
 
 # ── GET drama detail (aggregation pipeline instead of full scan) ──
 @app.get("/api/dramas/{title}")
-def get_drama(title: str, user=Depends(get_current_user)):
+async def get_drama(title: str, user=Depends(get_current_user)):
     decoded = urllib.parse.unquote(title)
     pipeline = [
         {"$unwind": "$dramas"},
@@ -600,7 +609,7 @@ def get_drama(title: str, user=Depends(get_current_user)):
     else:
         # Fetch from TMDB dynamically
         try:
-            tmdb_data = _tmdb_get("/search/tv", {"query": decoded, "language": "en-US"})
+            tmdb_data = await _tmdb_get("/search/tv", {"query": decoded, "language": "en-US"})
             tmdb_match = None
             for r in tmdb_data.get("results", []):
                 if r.get("original_language") == "ko":
@@ -613,7 +622,7 @@ def get_drama(title: str, user=Depends(get_current_user)):
 
             if tmdb_match:
                 tv_id = tmdb_match["id"]
-                detail = _tmdb_get(f"/tv/{tv_id}", {"language": "en-US"})
+                detail = await _tmdb_get(f"/tv/{tv_id}", {"language": "en-US"})
                 networks = [n["name"] for n in detail.get("networks", [])]
                 genres = [g["name"] for g in detail.get("genres", [])]
                 episodes = detail.get("number_of_episodes")
@@ -627,7 +636,7 @@ def get_drama(title: str, user=Depends(get_current_user)):
                 if not runtime and detail.get("seasons"):
                     try:
                         s1_id = detail["seasons"][0].get("season_number", 1)
-                        s1 = _tmdb_get(f"/tv/{tv_id}/season/{s1_id}", {"language": "en-US"})
+                        s1 = await _tmdb_get(f"/tv/{tv_id}/season/{s1_id}", {"language": "en-US"})
                         ep_runtimes = [e.get("runtime") for e in s1.get("episodes", []) if e.get("runtime")]
                         if ep_runtimes:
                             runtime = round(sum(ep_runtimes) / len(ep_runtimes))
@@ -729,13 +738,13 @@ def reset_data():
     return {"message": "Data reset to defaults"}
 
 
-def _find_tmdb_person(name: str, known_drama: str | None = None) -> int | None:
+async def _find_tmdb_person(name: str, known_drama: str | None = None) -> int | None:
     """Search TMDB for a Korean actress by name.
 
     If known_drama is provided, cross-reference against each result's known_for
     credits to pick the correct person (avoids wrong matches for common names).
     """
-    data = _tmdb_get("/search/person", {"query": name, "language": "en-US"})
+    data = await _tmdb_get("/search/person", {"query": name, "language": "en-US"})
     actors = [p for p in data.get("results", []) if p.get("known_for_department") == "Acting"]
 
     if not actors:
@@ -763,18 +772,16 @@ def _find_tmdb_person(name: str, known_drama: str | None = None) -> int | None:
                         return p["id"]
 
         # Still no match — try fetching TV credits for each candidate (up to 3)
-        # and check if their credits include the known drama
-        import time
         for p in actors[:3]:
             try:
-                credits = _tmdb_get(f"/person/{p['id']}/tv_credits", {"language": "en-US"})
+                credits = await _tmdb_get(f"/person/{p['id']}/tv_credits", {"language": "en-US"})
                 credit_titles = set()
                 for c in credits.get("cast", []):
                     credit_titles.add(c.get("name", "").lower())
                     credit_titles.add(c.get("original_name", "").lower())
                 if known_lower in credit_titles:
                     return p["id"]
-                time.sleep(0.2)
+                await asyncio.sleep(0.2)
             except Exception:
                 continue
 
@@ -799,9 +806,9 @@ def _classify_category(genre_ids: list[int]) -> str:
     return "drama"
 
 
-def _fetch_tmdb_dramas(person_id: int) -> list[dict]:
+async def _fetch_tmdb_dramas(person_id: int) -> list[dict]:
     """Fetch Korean TV credits for a person from TMDB, classified as drama or show."""
-    credits = _tmdb_get(f"/person/{person_id}/tv_credits", {"language": "en-US"})
+    credits = await _tmdb_get(f"/person/{person_id}/tv_credits", {"language": "en-US"})
     dramas = []
     seen = set()
     for c in credits.get("cast", []):
@@ -824,9 +831,8 @@ def _fetch_tmdb_dramas(person_id: int) -> list[dict]:
 # ── POST refresh all actress data from TMDB (admin-protected) ──
 @app.post("/api/refresh-all", dependencies=[Depends(_require_admin)])
 @limiter.limit("2/hour")
-def refresh_all_data(request: Request):
+async def refresh_all_data(request: Request):
     """Re-fetch dramas, gallery photos, and profile images for all actresses from TMDB."""
-    import time
     actresses = list(actresses_collection.find({}))
     results = {"total": len(actresses), "updated": 0, "failed": []}
 
@@ -834,15 +840,15 @@ def refresh_all_data(request: Request):
         name = doc["name"]
         known_drama = doc.get("known", "")
         try:
-            person_id = _find_tmdb_person(name, known_drama=known_drama)
+            person_id = await _find_tmdb_person(name, known_drama=known_drama)
             if not person_id:
                 results["failed"].append(f"{name}: not found on TMDB")
                 continue
 
             # Fetch fresh data
-            person = _tmdb_get(f"/person/{person_id}", {"language": "en-US"})
-            dramas = _fetch_tmdb_dramas(person_id)
-            gallery = _fetch_gallery_photos(person_id, name)
+            person = await _tmdb_get(f"/person/{person_id}", {"language": "en-US"})
+            dramas = await _fetch_tmdb_dramas(person_id)
+            gallery = await _fetch_gallery_photos(person_id, name)
             image = f"{TMDB_IMG}{person['profile_path']}" if person.get("profile_path") else doc.get("image")
 
             update_fields: dict = {
@@ -861,7 +867,7 @@ def refresh_all_data(request: Request):
                 {"$set": update_fields},
             )
             results["updated"] += 1
-            time.sleep(0.4)
+            await asyncio.sleep(0.4)
         except Exception as e:
             results["failed"].append(f"{name}: {str(e)}")
 
