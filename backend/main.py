@@ -345,7 +345,7 @@ def get_actress_details_from_tmdb(tmdb_id: int):
     birth_date = person.get("birthday")
     birth_place = person.get("place_of_birth")
 
-    # Filter Korean dramas from credits
+    # Filter Korean credits and classify as drama vs show
     dramas = []
     seen_titles = set()
     for c in credits.get("cast", []):
@@ -359,7 +359,8 @@ def get_actress_details_from_tmdb(tmdb_id: int):
         year = int(year_str[:4]) if year_str and len(year_str) >= 4 else 0
         poster = f"{TMDB_IMG}{c['poster_path']}" if c.get("poster_path") else None
         role = c.get("character", "")
-        dramas.append({"title": title, "year": year, "role": role, "poster": poster})
+        category = _classify_category(c.get("genre_ids", []))
+        dramas.append({"title": title, "year": year, "role": role, "poster": poster, "category": category})
 
     dramas.sort(key=lambda d: d["year"], reverse=True)
 
@@ -776,8 +777,19 @@ def _find_tmdb_person(name: str, known_drama: str | None = None) -> int | None:
     return actors[0]["id"]
 
 
+# TMDB genre IDs for non-drama TV (variety, reality, talk, game shows)
+_SHOW_GENRE_IDS = {10764, 10767, 10766, 10763}  # Reality, Talk, Game Show, News
+
+
+def _classify_category(genre_ids: list[int]) -> str:
+    """Return 'show' for variety/reality/talk/game shows, 'drama' otherwise."""
+    if any(gid in _SHOW_GENRE_IDS for gid in genre_ids):
+        return "show"
+    return "drama"
+
+
 def _fetch_tmdb_dramas(person_id: int) -> list[dict]:
-    """Fetch Korean drama credits for a person from TMDB."""
+    """Fetch Korean TV credits for a person from TMDB, classified as drama or show."""
     credits = _tmdb_get(f"/person/{person_id}/tv_credits", {"language": "en-US"})
     dramas = []
     seen = set()
@@ -792,7 +804,8 @@ def _fetch_tmdb_dramas(person_id: int) -> list[dict]:
         year = int(year_str[:4]) if year_str and len(year_str) >= 4 else 0
         poster = f"{TMDB_IMG}{c['poster_path']}" if c.get("poster_path") else None
         role = c.get("character", "")
-        dramas.append({"title": title, "year": year, "role": role, "poster": poster})
+        category = _classify_category(c.get("genre_ids", []))
+        dramas.append({"title": title, "year": year, "role": role, "poster": poster, "category": category})
     dramas.sort(key=lambda d: d["year"], reverse=True)
     return dramas
 

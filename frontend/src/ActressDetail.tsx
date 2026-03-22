@@ -134,84 +134,106 @@ export default function ActressDetail() {
           </div>
         </div>
 
-        {/* Filmography Card - full width with posters */}
-        <div className="detail-section full-width">
-          <h2 className="detail-section-title">
-            Filmography
-            <span className="detail-section-count">{actress.dramas?.length || 0} dramas</span>
-          </h2>
-          <div className="detail-filmography-grid">
-            {(actress.dramas || []).map((drama, i) => (
-              <div key={i} className="detail-drama-card clickable">
-                <div onClick={() => navigate(`/drama/${encodeURIComponent(drama.title)}`)}>
-                  {drama.poster ? (
-                    <img
-                      className="detail-drama-poster"
-                      src={drama.poster}
-                      alt={drama.title}
-                      referrerPolicy="no-referrer"
-                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                    />
-                  ) : (
-                    <div className="detail-drama-poster-placeholder">
-                      <span>{drama.title.charAt(0)}</span>
-                    </div>
-                  )}
-                  <div className="detail-drama-card-info">
-                    <span className="detail-drama-title">{drama.title}</span>
-                    <span className="detail-drama-year-badge">{drama.year}</span>
-                    {drama.role && <span className="detail-drama-role">as {drama.role}</span>}
+        {/* Filmography - split into K-Dramas and TV Shows */}
+        {(() => {
+          const allDramas = actress.dramas || [];
+          const kdramas = allDramas.filter((d) => d.category !== "show");
+          const tvShows = allDramas.filter((d) => d.category === "show");
+
+          const renderCard = (drama: typeof allDramas[0], i: number) => (
+            <div key={i} className="detail-drama-card clickable">
+              <div onClick={() => navigate(`/drama/${encodeURIComponent(drama.title)}`)}>
+                {drama.poster ? (
+                  <img
+                    className="detail-drama-poster"
+                    src={drama.poster}
+                    alt={drama.title}
+                    referrerPolicy="no-referrer"
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                  />
+                ) : (
+                  <div className="detail-drama-poster-placeholder">
+                    <span>{drama.title.charAt(0)}</span>
+                  </div>
+                )}
+                <div className="detail-drama-card-info">
+                  <span className="detail-drama-title">{drama.title}</span>
+                  <span className="detail-drama-year-badge">{drama.year}</span>
+                  {drama.role && <span className="detail-drama-role">as {drama.role}</span>}
+                </div>
+              </div>
+              <div className="drama-rating" onClick={(e) => e.stopPropagation()}>
+                {[...Array(10)].map((_, s) => (
+                  <span
+                    key={s}
+                    className={`rating-star ${(drama.rating || 0) > s ? "filled" : ""} ${!user ? "disabled" : ""}`}
+                    onClick={() => {
+                      if (!user) return;
+                      const origIndex = allDramas.indexOf(drama);
+                      const newRating = s + 1 === drama.rating ? null : s + 1;
+                      rateDrama(actress._id, drama.title, newRating);
+                      setActress((prev) => {
+                        if (!prev) return prev;
+                        return { ...prev, dramas: prev.dramas.map((d, di) => di === origIndex ? { ...d, rating: newRating } : d) };
+                      });
+                    }}
+                  >
+                    ★
+                  </span>
+                ))}
+                {drama.rating && <span className="rating-value">{drama.rating}/10</span>}
+              </div>
+              <div className="watch-status-row" onClick={(e) => e.stopPropagation()}>
+                {(["watched", "watching", "plan_to_watch", "dropped"] as WatchStatus[]).map((ws) => (
+                  <button
+                    key={ws}
+                    className={`watch-btn ${drama.watchStatus === ws ? "active" : ""} ws-${ws} ${!user ? "disabled" : ""}`}
+                    disabled={!user}
+                    onClick={() => {
+                      if (!user) return;
+                      const origIndex = allDramas.indexOf(drama);
+                      const newStatus = drama.watchStatus === ws ? null : ws;
+                      updateWatchStatus(actress._id, drama.title, newStatus);
+                      setActress((prev) => {
+                        if (!prev) return prev;
+                        return { ...prev, dramas: prev.dramas.map((d, di) => di === origIndex ? { ...d, watchStatus: newStatus } : d) };
+                      });
+                    }}
+                  >
+                    {ws === "watched" ? "Watched" : ws === "watching" ? "Watching" : ws === "plan_to_watch" ? "Plan" : "Dropped"}
+                  </button>
+                ))}
+              </div>
+              <span className="drama-card-arrow" onClick={() => navigate(`/drama/${encodeURIComponent(drama.title)}`)}>&#x2192;</span>
+            </div>
+          );
+
+          return (
+            <>
+              <div className="detail-section full-width">
+                <h2 className="detail-section-title">
+                  K-Dramas
+                  <span className="detail-section-count">{kdramas.length} titles</span>
+                </h2>
+                <div className="detail-filmography-grid">
+                  {kdramas.map((d, i) => renderCard(d, i))}
+                </div>
+                {kdramas.length === 0 && <p className="detail-empty">No K-Drama credits found.</p>}
+              </div>
+              {tvShows.length > 0 && (
+                <div className="detail-section full-width">
+                  <h2 className="detail-section-title">
+                    TV Shows
+                    <span className="detail-section-count">{tvShows.length} titles</span>
+                  </h2>
+                  <div className="detail-filmography-grid">
+                    {tvShows.map((d, i) => renderCard(d, i))}
                   </div>
                 </div>
-                <div className="drama-rating" onClick={(e) => e.stopPropagation()}>
-                  {[...Array(10)].map((_, s) => (
-                    <span
-                      key={s}
-                      className={`rating-star ${(drama.rating || 0) > s ? "filled" : ""} ${!user ? "disabled" : ""}`}
-                      onClick={() => {
-                        if (!user) return;
-                        const newRating = s + 1 === drama.rating ? null : s + 1;
-                        rateDrama(actress._id, drama.title, newRating);
-                        setActress((prev) => {
-                          if (!prev) return prev;
-                          const updated = { ...prev, dramas: prev.dramas.map((d, di) => di === i ? { ...d, rating: newRating } : d) };
-                          return updated;
-                        });
-                      }}
-                    >
-                      ★
-                    </span>
-                  ))}
-                  {drama.rating && <span className="rating-value">{drama.rating}/10</span>}
-                </div>
-                <div className="watch-status-row" onClick={(e) => e.stopPropagation()}>
-                  {(["watched", "watching", "plan_to_watch", "dropped"] as WatchStatus[]).map((ws) => (
-                    <button
-                      key={ws}
-                      className={`watch-btn ${drama.watchStatus === ws ? "active" : ""} ws-${ws} ${!user ? "disabled" : ""}`}
-                      disabled={!user}
-                      onClick={() => {
-                        if (!user) return;
-                        const newStatus = drama.watchStatus === ws ? null : ws;
-                        updateWatchStatus(actress._id, drama.title, newStatus);
-                        setActress((prev) => {
-                          if (!prev) return prev;
-                          return { ...prev, dramas: prev.dramas.map((d, di) => di === i ? { ...d, watchStatus: newStatus } : d) };
-                        });
-                      }}
-                    >
-                      {ws === "watched" ? "Watched" : ws === "watching" ? "Watching" : ws === "plan_to_watch" ? "Plan" : "Dropped"}
-                    </button>
-                  ))}
-                </div>
-                <span className="drama-card-arrow" onClick={() => navigate(`/drama/${encodeURIComponent(drama.title)}`)}>&#x2192;</span>
-              </div>
-            ))}
-          </div>
-          {(!actress.dramas || actress.dramas.length === 0) && (
-            <p className="detail-empty">No filmography data available.</p>
-          )}
-        </div>
+              )}
+            </>
+          );
+        })()}
 
         {/* Awards Card - full width */}
         <div className="detail-section full-width">

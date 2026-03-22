@@ -7,6 +7,7 @@ class Drama(BaseModel):
     year: int
     role: str = ""
     poster: Optional[str] = None
+    category: str = "drama"  # "drama" or "show"
 
 
 class ActressCreate(BaseModel):

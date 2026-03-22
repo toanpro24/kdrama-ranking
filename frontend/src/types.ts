@@ -7,6 +7,7 @@ export interface Drama {
   poster: string | null;
   rating: number | null;
   watchStatus: WatchStatus;
+  category: "drama" | "show";
 }
 
 export interface Actress {
