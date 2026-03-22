@@ -672,6 +672,85 @@ def reset_data():
     return {"message": "Data reset to defaults"}
 
 
+def _find_tmdb_person(name: str) -> int | None:
+    """Search TMDB for a Korean actress by name."""
+    data = _tmdb_get("/search/person", {"query": name, "language": "en-US"})
+    for p in data.get("results", []):
+        if p.get("known_for_department") != "Acting":
+            continue
+        for kf in p.get("known_for", []):
+            if kf.get("original_language") == "ko":
+                return p["id"]
+        return p["id"]
+    return None
+
+
+def _fetch_tmdb_dramas(person_id: int) -> list[dict]:
+    """Fetch Korean drama credits for a person from TMDB."""
+    credits = _tmdb_get(f"/person/{person_id}/tv_credits", {"language": "en-US"})
+    dramas = []
+    seen = set()
+    for c in credits.get("cast", []):
+        if c.get("original_language") != "ko":
+            continue
+        title = c.get("name", "")
+        if not title or title in seen:
+            continue
+        seen.add(title)
+        year_str = c.get("first_air_date", "")
+        year = int(year_str[:4]) if year_str and len(year_str) >= 4 else 0
+        poster = f"{TMDB_IMG}{c['poster_path']}" if c.get("poster_path") else None
+        role = c.get("character", "")
+        dramas.append({"title": title, "year": year, "role": role, "poster": poster})
+    dramas.sort(key=lambda d: d["year"], reverse=True)
+    return dramas
+
+
+# ── POST refresh all actress data from TMDB (admin-protected) ──
+@app.post("/api/refresh-all", dependencies=[Depends(_require_admin)])
+def refresh_all_data():
+    """Re-fetch dramas, gallery photos, and profile images for all actresses from TMDB."""
+    import time
+    actresses = list(actresses_collection.find({}))
+    results = {"total": len(actresses), "updated": 0, "failed": []}
+
+    for doc in actresses:
+        name = doc["name"]
+        try:
+            person_id = _find_tmdb_person(name)
+            if not person_id:
+                results["failed"].append(f"{name}: not found on TMDB")
+                continue
+
+            # Fetch fresh data
+            person = _tmdb_get(f"/person/{person_id}", {"language": "en-US"})
+            dramas = _fetch_tmdb_dramas(person_id)
+            gallery = _fetch_gallery_photos(person_id, name)
+            image = f"{TMDB_IMG}{person['profile_path']}" if person.get("profile_path") else doc.get("image")
+
+            update_fields: dict = {
+                "dramas": dramas,
+                "gallery": gallery,
+                "image": image,
+            }
+            # Update birth info if available and not already set
+            if person.get("birthday"):
+                update_fields["birthDate"] = person["birthday"]
+            if person.get("place_of_birth"):
+                update_fields["birthPlace"] = person["place_of_birth"]
+
+            actresses_collection.update_one(
+                {"_id": doc["_id"]},
+                {"$set": update_fields},
+            )
+            results["updated"] += 1
+            time.sleep(0.4)
+        except Exception as e:
+            results["failed"].append(f"{name}: {str(e)}")
+
+    return results
+
+
 # ── POST chat (AI recommendations via Claude Haiku, SSE streaming) ──
 def _build_system_prompt(user_id: str | None) -> str:
     docs = list(actresses_collection.find())
