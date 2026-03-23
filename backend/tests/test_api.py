@@ -8,6 +8,7 @@ from tests.conftest import (
     _mock_actresses,
     _mock_rankings,
     _mock_drama_status,
+    _mock_user_actresses,
     SAMPLE_ACTRESS_DOC,
     MOCK_USER,
 )
@@ -132,13 +133,29 @@ class TestCreateActress:
         assert data["tier"] is None
 
     @pytest.mark.anyio
-    async def test_duplicate_name_409(self, client_authed, actresses_col):
-        actresses_col.find_one.return_value = {"_id": ObjectId(), "name": "Shin Hye-sun"}
+    async def test_duplicate_name_adds_to_user_list(self, client_authed, actresses_col):
+        """When an actress already exists, logged-in user gets her added to their list."""
+        existing_id = ObjectId()
+        existing_doc = {
+            "_id": existing_id, "name": "Shin Hye-sun", "known": "Mr. Queen",
+            "genre": "Romance", "year": 2021, "dramas": [], "awards": [], "gallery": [],
+        }
+        actresses_col.find_one.return_value = existing_doc
 
         payload = {"name": "Shin Hye-sun"}
         resp = await client_authed.post("/api/actresses", json=payload)
+        assert resp.status_code == 201
+        assert resp.json()["name"] == "Shin Hye-sun"
+        _mock_user_actresses.update_one.assert_called_once()
+
+    @pytest.mark.anyio
+    async def test_duplicate_name_409_guest(self, client_guest, actresses_col):
+        """Guests still get 409 for duplicates."""
+        actresses_col.find_one.return_value = {"_id": ObjectId(), "name": "Shin Hye-sun"}
+
+        payload = {"name": "Shin Hye-sun"}
+        resp = await client_guest.post("/api/actresses", json=payload)
         assert resp.status_code == 409
-        assert "already in the database" in resp.json()["detail"]
 
 
 # ── PATCH /api/actresses/{id}/tier ──
@@ -263,30 +280,32 @@ class TestUpdateWatchStatus:
 
 class TestDeleteActress:
     @pytest.mark.anyio
-    async def test_delete_without_admin_key(self, client_authed, sample_actress_id):
-        # No X-API-Key header -> should fail with 403
-        resp = await client_authed.delete(f"/api/actresses/{sample_actress_id}")
-        assert resp.status_code == 403
-
-    @pytest.mark.anyio
-    async def test_delete_with_admin_key(self, client_authed, actresses_col, sample_actress_id):
+    async def test_delete_removes_from_user_list(self, client_authed, sample_actress_id):
+        """Authenticated user can remove actress from their personal list."""
         mock_result = MagicMock()
         mock_result.deleted_count = 1
-        actresses_col.delete_one.return_value = mock_result
-
-        # Need to override the _require_admin dependency
-        from main import _require_admin
-        from main import app as test_app
-
-        test_app.dependency_overrides[_require_admin] = lambda: None
+        _mock_user_actresses.delete_one.return_value = mock_result
 
         resp = await client_authed.delete(f"/api/actresses/{sample_actress_id}")
         assert resp.status_code == 200
         assert resp.json()["deleted"] == sample_actress_id
+        _mock_user_actresses.delete_one.assert_called_once()
 
-        # Clean up override
-        if _require_admin in test_app.dependency_overrides:
-            del test_app.dependency_overrides[_require_admin]
+    @pytest.mark.anyio
+    async def test_delete_not_in_list_404(self, client_authed, sample_actress_id):
+        """Returns 404 if actress not in user's list."""
+        mock_result = MagicMock()
+        mock_result.deleted_count = 0
+        _mock_user_actresses.delete_one.return_value = mock_result
+
+        resp = await client_authed.delete(f"/api/actresses/{sample_actress_id}")
+        assert resp.status_code == 404
+
+    @pytest.mark.anyio
+    async def test_delete_guest_401(self, client_guest, sample_actress_id):
+        """Guests cannot delete actresses."""
+        resp = await client_guest.delete(f"/api/actresses/{sample_actress_id}")
+        assert resp.status_code == 401
 
 
 # ── GET /api/stats ──

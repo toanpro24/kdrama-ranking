@@ -20,3 +20,8 @@ user_rankings_collection.create_index([("userId", 1), ("actressId", 1)], unique=
 
 user_drama_status_collection = db["user_drama_status"]
 user_drama_status_collection.create_index([("userId", 1), ("actressId", 1), ("dramaTitle", 1)], unique=True)
+
+# Per-user actress list (which actresses each user has in their pool)
+user_actresses_collection = db["user_actresses"]
+user_actresses_collection.create_index([("userId", 1), ("actressId", 1)], unique=True)
+user_actresses_collection.create_index("userId")

@@ -17,7 +17,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from auth import get_current_user, require_user
-from database import actresses_collection, user_rankings_collection, user_drama_status_collection
+from database import actresses_collection, user_rankings_collection, user_drama_status_collection, user_actresses_collection
 from drama_metadata import DRAMA_META
 from models import ActressCreate, TierUpdate
 from seed import seed
@@ -274,10 +274,30 @@ app.add_middleware(
 )
 
 
+def _ensure_user_list(uid: str):
+    """Seed a user's actress list on first visit (copy all current actresses)."""
+    if user_actresses_collection.count_documents({"userId": uid}) > 0:
+        return
+    all_ids = [str(d["_id"]) for d in actresses_collection.find({}, {"_id": 1})]
+    if all_ids:
+        user_actresses_collection.insert_many(
+            [{"userId": uid, "actressId": aid} for aid in all_ids]
+        )
+
+
 # ── GET all actresses ──
 @app.get("/api/actresses")
 def get_actresses(genre: str | None = None, search: str | None = None, user=Depends(get_current_user)):
     query = {}
+
+    # Filter to user's personal list if logged in
+    if user:
+        _ensure_user_list(user["uid"])
+        user_actress_ids = [
+            d["actressId"] for d in user_actresses_collection.find({"userId": user["uid"]}, {"actressId": 1})
+        ]
+        query["_id"] = {"$in": [_oid(aid) for aid in user_actress_ids]}
+
     if genre and genre != "All":
         query["genre"] = genre
     if search:
@@ -444,15 +464,34 @@ async def get_actress_details_from_tmdb(request: Request, tmdb_id: int):
 
 # ── POST create actress (ObjectId = concurrent-safe, no race condition) ──
 @app.post("/api/actresses", status_code=201)
-def create_actress(actress: ActressCreate):
+def create_actress(actress: ActressCreate, user=Depends(get_current_user)):
     # Check for duplicate by name (case-insensitive)
     existing = actresses_collection.find_one({"name": {"$regex": f"^{actress.name}$", "$options": "i"}})
     if existing:
+        # Actress already exists in shared pool — just add to user's list if logged in
+        actress_id = str(existing["_id"])
+        if user:
+            user_actresses_collection.update_one(
+                {"userId": user["uid"], "actressId": actress_id},
+                {"$set": {"userId": user["uid"], "actressId": actress_id}},
+                upsert=True,
+            )
+            existing["_id"] = actress_id
+            _merge_user_data([existing], user["uid"])
+            return existing
         raise HTTPException(status_code=409, detail=f"{actress.name} is already in the database")
     doc = actress.model_dump()
     result = actresses_collection.insert_one(doc)
-    doc["_id"] = str(result.inserted_id)
+    actress_id = str(result.inserted_id)
+    doc["_id"] = actress_id
     doc["tier"] = None
+    # Add to user's personal list
+    if user:
+        user_actresses_collection.update_one(
+            {"userId": user["uid"], "actressId": actress_id},
+            {"$set": {"userId": user["uid"], "actressId": actress_id}},
+            upsert=True,
+        )
     return doc
 
 
@@ -526,24 +565,51 @@ def update_watch_status(actress_id: str, drama_title: str, body: dict, user=Depe
     return {"actressId": actress_id, "drama": decoded, "watchStatus": status}
 
 
-# ── DELETE actress (admin-protected) ──
-@app.delete("/api/actresses/{actress_id}", dependencies=[Depends(_require_admin)])
-def delete_actress(actress_id: str):
+# ── DELETE actress from user's list (per-user) ──
+@app.delete("/api/actresses/{actress_id}")
+def delete_actress(actress_id: str, user=Depends(require_user)):
+    # Remove from user's personal list only
+    result = user_actresses_collection.delete_one({"userId": user["uid"], "actressId": actress_id})
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Actress not found in your list")
+    # Also clean up user's tier and drama status for this actress
+    user_rankings_collection.delete_many({"userId": user["uid"], "actressId": actress_id})
+    user_drama_status_collection.delete_many({"userId": user["uid"], "actressId": actress_id})
+    return {"deleted": actress_id}
+
+
+# ── DELETE actress permanently (admin-protected) ──
+@app.delete("/api/actresses/{actress_id}/admin", dependencies=[Depends(_require_admin)])
+def admin_delete_actress(actress_id: str):
     result = actresses_collection.delete_one({"_id": _oid(actress_id)})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Actress not found")
+    # Clean up all user data for this actress
+    user_actresses_collection.delete_many({"actressId": actress_id})
+    user_rankings_collection.delete_many({"actressId": actress_id})
+    user_drama_status_collection.delete_many({"actressId": actress_id})
     return {"deleted": actress_id}
 
 
 # ── GET stats (per-user when logged in) ──
 @app.get("/api/stats")
 def get_stats(user=Depends(get_current_user)):
+    if user:
+        _ensure_user_list(user["uid"])
+        user_actress_ids = [
+            _oid(d["actressId"]) for d in user_actresses_collection.find({"userId": user["uid"]}, {"actressId": 1})
+        ]
+        match_filter = {"_id": {"$in": user_actress_ids}}
+    else:
+        match_filter = {}
+
     pipeline = [
+        {"$match": match_filter},
         {"$group": {"_id": "$genre", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
     ]
     genre_counts = {doc["_id"]: doc["count"] for doc in actresses_collection.aggregate(pipeline)}
-    total = actresses_collection.count_documents({})
+    total = actresses_collection.count_documents(match_filter)
 
     if user:
         tier_pipeline = [
@@ -898,7 +964,14 @@ async def refresh_all_data(request: Request):
 
 # ── POST chat (AI recommendations via Claude Haiku, SSE streaming) ──
 def _build_system_prompt(user_id: str | None) -> str:
-    docs = list(actresses_collection.find())
+    query = {}
+    if user_id:
+        _ensure_user_list(user_id)
+        user_actress_ids = [
+            _oid(d["actressId"]) for d in user_actresses_collection.find({"userId": user_id}, {"actressId": 1})
+        ]
+        query["_id"] = {"$in": user_actress_ids}
+    docs = list(actresses_collection.find(query))
     for d in docs:
         d["_id"] = str(d["_id"])
     _merge_user_data(docs, user_id)

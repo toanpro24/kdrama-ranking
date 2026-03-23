@@ -37,6 +37,7 @@ _mock_mongo_client_instance.__getitem__ = MagicMock(return_value=_mock_db)
 _mock_actresses = MagicMock(name="actresses_collection")
 _mock_rankings = MagicMock(name="user_rankings_collection")
 _mock_drama_status = MagicMock(name="user_drama_status_collection")
+_mock_user_actresses = MagicMock(name="user_actresses_collection")
 
 # Map collection names to our mocks
 def _mock_getitem(name):
@@ -44,6 +45,7 @@ def _mock_getitem(name):
         "actresses": _mock_actresses,
         "user_rankings": _mock_rankings,
         "user_drama_status": _mock_drama_status,
+        "user_actresses": _mock_user_actresses,
     }.get(name, MagicMock())
 
 _mock_db.__getitem__ = MagicMock(side_effect=_mock_getitem)
@@ -65,12 +67,14 @@ app.state.limiter.enabled = False
 main_module.actresses_collection = _mock_actresses
 main_module.user_rankings_collection = _mock_rankings
 main_module.user_drama_status_collection = _mock_drama_status
+main_module.user_actresses_collection = _mock_user_actresses
 
 # Also patch in database module so any other module that imported from it is consistent
 import database as db_module  # noqa: E402
 db_module.actresses_collection = _mock_actresses
 db_module.user_rankings_collection = _mock_rankings
 db_module.user_drama_status_collection = _mock_drama_status
+db_module.user_actresses_collection = _mock_user_actresses
 
 # And in seed module
 import seed as seed_module  # noqa: E402
@@ -134,6 +138,7 @@ def _reset_mocks():
     _mock_actresses.reset_mock()
     _mock_rankings.reset_mock()
     _mock_drama_status.reset_mock()
+    _mock_user_actresses.reset_mock()
     main_module._tmdb_cache.clear()
     yield
 
@@ -151,6 +156,11 @@ def rankings_col():
 @pytest.fixture()
 def drama_status_col():
     return _mock_drama_status
+
+
+@pytest.fixture()
+def user_actresses_col():
+    return _mock_user_actresses
 
 
 @pytest.fixture()
@@ -217,6 +227,10 @@ async def client_authed(tmdb_mock):
         transport=httpx.MockTransport(tmdb_mock.async_handler),
         timeout=5,
     )
+    # Default: user already has a seeded list (count_documents > 0)
+    _mock_user_actresses.count_documents.return_value = 1
+    # Default: return the actress IDs the user has
+    _mock_user_actresses.find.return_value = [{"actressId": SAMPLE_ACTRESS_ID}]
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
