@@ -187,23 +187,28 @@ async def _fetch_gallery_photos(person_id: int, name: str, target: int = 10) -> 
         except Exception:
             pass
 
-    # Source 5: Google Custom Search Images (if configured)
-    if len(gallery) < target and GOOGLE_API_KEY and GOOGLE_CSE_ID:
+    # Source 5: TMDB drama stills (scene screenshots from Korean dramas)
+    if len(gallery) < target:
         try:
-            needed = target - len(gallery)
-            gparams = urllib.parse.urlencode({
-                "key": GOOGLE_API_KEY, "cx": GOOGLE_CSE_ID,
-                "q": f"{name} korean actress", "searchType": "image",
-                "num": min(needed, 10), "imgSize": "large",
-                "safe": "active",
-            })
-            gurl = f"https://www.googleapis.com/customsearch/v1?{gparams}"
-            resp = await client.get(gurl, headers={"Accept": "application/json"})
-            gdata = resp.json()
-            for item in gdata.get("items", []):
-                link = item.get("link", "")
-                if link:
-                    _add(link)
+            credits = await _tmdb_get(f"/person/{person_id}/tv_credits", {"language": "en-US"})
+            for c in credits.get("cast", []):
+                if len(gallery) >= target:
+                    break
+                if c.get("original_language") != "ko":
+                    continue
+                tv_id = c.get("id")
+                if not tv_id:
+                    continue
+                try:
+                    imgs_data = await _tmdb_get(f"/tv/{tv_id}/images", {})
+                    backdrops = imgs_data.get("backdrops", [])
+                    backdrops.sort(key=lambda b: b.get("vote_average", 0), reverse=True)
+                    for b in backdrops[:2]:
+                        if b.get("file_path"):
+                            _add(f"{TMDB_IMG}{b['file_path']}")
+                except Exception:
+                    pass
+                await asyncio.sleep(0.2)
         except Exception:
             pass
 
