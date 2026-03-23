@@ -1,0 +1,157 @@
+/* ── Nav ── */
+.nav {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 24px; border-bottom: 1px solid rgba(255,255,255,0.03);
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(8,8,13,0.94); backdrop-filter: blur(20px);
+  flex-wrap: wrap; gap: 8px;
+}
+.nav-tabs { display: flex; gap: 4px; }
+.nav-tab {
+  padding: 8px 20px; border-radius: 10px; border: none; background: transparent;
+  color: #666; font-size: 13px; font-weight: 600; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+}
+.nav-tab:hover:not(.active) { background: rgba(255,255,255,0.04); color: #aaa; transform: translateY(-1px); }
+.nav-tab.active { background: rgba(255,255,255,0.06); color: #fff; }
+.nav-actions { display: flex; gap: 8px; }
+.nav-btn {
+  padding: 7px 18px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);
+  background: transparent; color: #999; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+}
+.nav-btn:hover { background: rgba(255,255,255,0.06); color: #ccc; transform: translateY(-1px); }
+.nav-btn.primary {
+  background: linear-gradient(135deg, #FF2942, #FF4655); color: #fff; border: none;
+}
+.nav-btn.primary:hover { background: linear-gradient(135deg, #FF4655, #FF6168); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(255,41,66,0.3); }
+.nav-btn.share-btn { border-color: rgba(58,141,255,0.3); color: #3A8FFF; }
+.nav-btn.share-btn:hover { background: rgba(58,141,255,0.1); transform: translateY(-1px); }
+
+/* ── Auth UI ── */
+.user-btn {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 4px !important;
+  border-radius: 20px !important;
+  background: rgba(255,255,255,0.08) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.user-btn:hover { background: rgba(255,255,255,0.15) !important; }
+.user-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.user-name {
+  font-size: 13px;
+  color: rgba(255,255,255,0.85);
+  font-weight: 500;
+}
+
+.google-btn {
+  background: linear-gradient(135deg, #E500A4, #FF2942) !important;
+  font-weight: 600 !important;
+}
+
+.guest-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, rgba(229, 0, 164, 0.1), rgba(255, 41, 66, 0.08));
+  border-bottom: 1px solid rgba(229, 0, 164, 0.2);
+  font-size: 13px;
+  color: rgba(255,255,255,0.7);
+}
+.guest-banner-btn {
+  background: linear-gradient(135deg, #E500A4, #FF2942);
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+}
+.guest-banner-btn:hover { opacity: 0.9; }
+
+/* ── User Menu Dropdown ── */
+.user-menu-wrap { position: relative; }
+.user-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 280px;
+  background: #1a1a2e;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  z-index: 1000;
+  overflow: hidden;
+  animation: menuFadeIn 0.15s ease-out;
+}
+@keyframes menuFadeIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.user-menu-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+}
+.user-menu-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.user-menu-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.user-menu-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.user-menu-email {
+  font-size: 12px;
+  color: rgba(255,255,255,0.45);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.user-menu-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+}
+.user-menu-item {
+  display: block;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.7);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.user-menu-item:hover {
+  background: rgba(255,255,255,0.06);
+  color: #FF2942;
+}

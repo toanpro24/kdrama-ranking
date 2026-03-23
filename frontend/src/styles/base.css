@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@400;500;600;700&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+::selection { background: #FF294244; color: #fff; }
+
+/* ── Focus styles for accessibility ── */
+:focus-visible {
+  outline: 2px solid #e500a4;
+  outline-offset: 2px;
+}
+button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid #e500a4;
+  outline-offset: 2px;
+}
+.actress-card:focus-visible {
+  outline: 2px solid #e500a4;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(229, 0, 164, 0.2);
+}
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #e500a4;
+  color: #fff;
+  padding: 8px 16px;
+  z-index: 10000;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 0 0 8px 0;
+  transition: top 0.2s;
+}
+.skip-link:focus {
+  top: 0;
+}
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: #08080D;
+  color: #E8E4DF;
+  min-height: 100vh;
+}
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}

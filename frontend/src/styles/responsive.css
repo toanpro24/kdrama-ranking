@@ -1,0 +1,133 @@
+/* ══════════════════════════════════════════════════════════
+   RESPONSIVE — Mobile & Tablet
+   ══════════════════════════════════════════════════════════ */
+
+@media (max-width: 768px) {
+  /* Hero */
+  .hero { padding: 48px 16px 36px; }
+  .hero-badge { font-size: 9px; letter-spacing: 2px; padding: 5px 14px; margin-bottom: 16px; }
+  .hero-desc { font-size: 13px; margin-bottom: 16px; }
+  .hero-social-links { gap: 8px; margin-bottom: 20px; }
+  .social-link { padding: 5px 12px; font-size: 11px; }
+  .stats-bar { gap: 0; padding: 12px 8px; border-radius: 14px; }
+  .stat-item { padding: 0 12px; }
+  .stat-num { font-size: 20px; }
+  .stat-label { font-size: 9px; letter-spacing: 1px; }
+  .stat-divider { height: 28px; }
+
+  /* Nav — scrollable tabs + stacked actions */
+  .nav { flex-direction: column; padding: 8px 12px; gap: 6px; }
+  .nav-tabs { width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; gap: 2px; }
+  .nav-tabs::-webkit-scrollbar { display: none; }
+  .nav-tab { padding: 7px 14px; font-size: 12px; white-space: nowrap; flex-shrink: 0; }
+  .nav-actions { width: 100%; justify-content: center; gap: 6px; }
+  .nav-btn { padding: 6px 12px; font-size: 11px; }
+
+  /* Add panel */
+  .add-panel { padding: 0 12px 12px; }
+  .add-grid { grid-template-columns: 1fr !important; }
+  .add-title { font-size: 18px; }
+
+  /* Main content */
+  .main-content { padding: 16px 10px; }
+
+  /* Tier rows */
+  .tier-label { width: 52px; min-width: 52px; }
+  .tier-label-text { font-size: 20px; }
+  .tier-count { font-size: 8px; }
+  .tier-content { gap: 6px; padding: 8px; }
+
+  /* Actress cards — compact on mobile */
+  .actress-card { padding: 8px 12px 8px 10px; gap: 8px; border-radius: 10px; }
+  .card-avatar { width: 38px; height: 38px; }
+  .card-name { font-size: 12px; }
+  .card-known { font-size: 10px; }
+  .card-meta-row { gap: 4px; margin-top: 1px; }
+  .card-genre { font-size: 8px; padding: 1px 6px; }
+  .card-age, .card-drama-count { font-size: 8px; }
+  .remove-btn { opacity: 0.6; top: 2px; right: 2px; font-size: 10px; padding: 2px 5px; }
+
+  /* Hide hover popup on mobile — no hover on touch devices */
+  .card-popup { display: none; }
+
+  /* Unranked pool */
+  .unranked-head { padding: 16px 12px 14px; }
+  .unranked-title { font-size: 18px; }
+  .unranked-grid { padding: 12px !important; gap: 8px; }
+  .search-wrap { max-width: 100%; }
+  .genre-pills { gap: 4px; }
+  .genre-pill { padding: 5px 10px; font-size: 10px; }
+  .sort-pills { gap: 4px; }
+  .sort-pill { padding: 4px 8px; font-size: 10px; }
+  .sort-label { font-size: 10px; }
+
+  /* Stats page */
+  .stats-page { padding: 20px 12px !important; }
+  .stats-page-title { font-size: 22px !important; }
+  .stats-grid { grid-template-columns: 1fr !important; gap: 12px !important; }
+  .stats-card { padding: 16px !important; }
+  .stats-card-title { font-size: 15px !important; }
+
+  /* Detail pages */
+  .detail-page { padding: 20px 12px 48px; }
+  .detail-back { font-size: 12px; padding: 5px 10px; }
+
+  /* Compare page */
+  .compare-title { font-size: 22px; }
+  .compare-selectors { flex-direction: column; gap: 10px; }
+  .compare-vs { font-size: 16px; }
+  .compare-grid { grid-template-columns: 1fr; }
+  .compare-avatar { width: 80px !important; height: 80px !important; }
+  .compare-name { font-size: 18px !important; }
+  .compare-stats-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+
+  /* Timeline page */
+  .timeline-title { font-size: 22px; }
+  .timeline-container { padding-left: 30px; }
+  .timeline-year-marker { left: -30px; width: 28px; height: 28px; font-size: 9px; }
+  .timeline-drama-card { padding: 10px; gap: 10px; }
+  .timeline-poster { width: 48px; height: 68px; }
+  .timeline-poster-placeholder { width: 48px; height: 68px; }
+  .timeline-drama-name { font-size: 13px; }
+  .timeline-drama-actress { font-size: 11px; }
+
+  /* Recommendations page */
+  .recs-title { font-size: 22px !important; }
+  .recs-grid { grid-template-columns: 1fr !important; }
+
+  /* Toast — bottom on mobile */
+  .toast-container { top: auto; bottom: 16px; right: 12px; left: 12px; }
+  .toast { max-width: 100%; font-size: 12px; padding: 10px 14px; }
+
+  /* Footer */
+  .footer-section { padding: 28px 16px !important; }
+  .footer-text { font-size: 11px !important; }
+  .footer-copy { font-size: 11px !important; }
+
+  /* Guest banner */
+  .guest-banner { flex-direction: column; gap: 8px; text-align: center; padding: 10px 16px; }
+  .user-name { display: none; }
+}
+
+@media (max-width: 480px) {
+  /* Extra small — stack everything */
+  .hero { padding: 36px 12px 28px; }
+  .hero-title { margin-bottom: 16px; }
+  .stats-bar { flex-direction: row; flex-wrap: wrap; justify-content: center; }
+  .stat-divider { display: none; }
+  .stat-item { padding: 8px 16px; }
+
+  /* Cards even more compact */
+  .actress-card { padding: 6px 8px 6px 8px; gap: 6px; }
+  .card-avatar { width: 32px; height: 32px; }
+  .card-name { font-size: 11px; }
+  .card-known { display: none; }
+  .card-genre { font-size: 7px; }
+  .card-age, .card-drama-count { font-size: 7px; }
+
+  .tier-label { width: 40px; min-width: 40px; }
+  .tier-label-text { font-size: 16px; }
+
+  /* Guest banner */
+  .guest-banner span { font-size: 11px; }
+}

@@ -1,0 +1,56 @@
+/* ── Hero ── */
+.hero {
+  text-align: center;
+  padding: 72px 24px 56px;
+  position: relative;
+  overflow: hidden;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+  transition: all 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.hero-glow {
+  position: absolute; top: -40%; left: 50%; transform: translateX(-50%);
+  width: 120%; height: 100%;
+  background: radial-gradient(ellipse, rgba(255,41,66,0.1) 0%, rgba(255,123,58,0.04) 40%, transparent 70%);
+  pointer-events: none;
+}
+.hero-badge {
+  display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: 3px;
+  color: #FF7B3A; margin-bottom: 24px; text-transform: uppercase;
+  padding: 7px 20px; border: 1px solid rgba(255,123,58,0.2); border-radius: 100px;
+}
+.hero-title {
+  font-family: 'Playfair Display', serif; font-size: clamp(42px, 9vw, 80px);
+  font-weight: 900; line-height: 1; margin: 0 0 24px; color: #fff;
+}
+.hero-title-k {
+  background: linear-gradient(135deg, #FF2942 0%, #FF7B3A 50%, #FFC53A 100%);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-style: italic;
+}
+.hero-title-sub { color: #fff; font-size: clamp(28px, 5vw, 54px); font-weight: 700; }
+.hero-desc {
+  font-size: 15px; color: #777; line-height: 1.8; max-width: 480px; margin: 0 auto 20px;
+}
+.hero-social-links {
+  display: flex; justify-content: center; gap: 16px; margin-bottom: 32px;
+}
+.social-link {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600;
+  text-decoration: none; transition: all 0.2s; border: 1px solid rgba(255,255,255,0.08);
+  color: #aaa;
+}
+.social-link:hover { transform: translateY(-2px); }
+.social-link.instagram:hover { background: rgba(225,48,108,0.12); border-color: #E1306C44; color: #E1306C; }
+.social-link.github:hover { background: rgba(255,255,255,0.06); border-color: rgba(255,255,255,0.15); color: #fff; }
+
+/* ── Stats Bar ── */
+.stats-bar {
+  display: inline-flex; align-items: center; flex-wrap: wrap; justify-content: center;
+  background: rgba(255,255,255,0.03); border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.05); padding: 16px 12px;
+  backdrop-filter: blur(12px);
+}
+.stat-item { display: flex; flex-direction: column; align-items: center; padding: 0 20px; min-width: 70px; }
+.stat-num { font-family: 'Playfair Display', serif; font-size: 26px; font-weight: 700; color: #fff; }
+.stat-label { font-size: 10px; color: #666; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 4px; }
+.stat-divider { width: 1px; height: 40px; background: rgba(255,255,255,0.06); }
