@@ -21,7 +21,7 @@ export default function Compare() {
     `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&size=400&background=1a1a2e&color=fff&bold=true`;
 
   const sharedDramas = left && right
-    ? left.dramas.filter((d) => right.dramas.some((rd) => rd.title === d.title)).map((d) => d.title)
+    ? left.dramas.filter((d) => d.category !== "show" && right.dramas.some((rd) => rd.category !== "show" && rd.title === d.title)).map((d) => d.title)
     : [];
 
   const renderSide = (actress: Actress | null) => {
@@ -57,7 +57,7 @@ export default function Compare() {
           </div>
           <div className="compare-stat">
             <span className="compare-stat-label">Dramas</span>
-            <span className="compare-stat-value">{actress.dramas?.length || 0}</span>
+            <span className="compare-stat-value">{actress.dramas?.filter((d) => d.category !== "show").length || 0}</span>
           </div>
           <div className="compare-stat">
             <span className="compare-stat-label">Awards</span>
@@ -74,7 +74,7 @@ export default function Compare() {
         </div>
         <h3 className="compare-section-title">Filmography</h3>
         <div className="compare-drama-list">
-          {(actress.dramas || []).map((d, i) => (
+          {(actress.dramas || []).filter((d) => d.category !== "show").map((d, i) => (
             <div key={i} className={`compare-drama-item ${sharedDramas.includes(d.title) ? "shared" : ""}`}>
               <span className="compare-drama-title">{d.title}</span>
               <span className="compare-drama-year">{d.year}</span>
