@@ -253,6 +253,14 @@ async def lifespan(app: FastAPI):
     _http_client = httpx.AsyncClient(timeout=15, follow_redirects=True)
     if actresses_collection.count_documents({}) == 0:
         seed()
+    # One-time migration: mark existing actresses as default if not already tagged
+    if actresses_collection.count_documents({"default": True}) == 0:
+        from seed import SEED_DATA
+        seed_names = [a["name"] for a in SEED_DATA]
+        actresses_collection.update_many(
+            {"name": {"$in": seed_names}},
+            {"$set": {"default": True}},
+        )
     _apply_poster_fixes()
     await _backfill_galleries()
     yield
@@ -275,13 +283,14 @@ app.add_middleware(
 
 
 def _ensure_user_list(uid: str):
-    """Seed a user's actress list on first visit (copy all current actresses)."""
+    """Seed a user's actress list on first visit (copy only default/seed actresses)."""
     if user_actresses_collection.count_documents({"userId": uid}) > 0:
         return
-    all_ids = [str(d["_id"]) for d in actresses_collection.find({}, {"_id": 1})]
-    if all_ids:
+    # Only seed with the original default actresses, not user-added ones
+    default_ids = [str(d["_id"]) for d in actresses_collection.find({"default": True}, {"_id": 1})]
+    if default_ids:
         user_actresses_collection.insert_many(
-            [{"userId": uid, "actressId": aid} for aid in all_ids]
+            [{"userId": uid, "actressId": aid} for aid in default_ids]
         )
 
 
@@ -481,6 +490,7 @@ def create_actress(actress: ActressCreate, user=Depends(get_current_user)):
             return existing
         raise HTTPException(status_code=409, detail=f"{actress.name} is already in the database")
     doc = actress.model_dump()
+    doc["default"] = False  # User-added, not part of the default seed set
     result = actresses_collection.insert_one(doc)
     actress_id = str(result.inserted_id)
     doc["_id"] = actress_id

@@ -468,6 +468,9 @@ SEED_DATA = [
 
 def seed():
     actresses_collection.drop()
+    # Mark seed actresses as default so new users get exactly this set
+    for a in SEED_DATA:
+        a["default"] = True
     actresses_collection.insert_many(SEED_DATA)
     print(f"Seeded {len(SEED_DATA)} actresses into MongoDB.")
     # Also populate gallery images and drama posters
