@@ -107,10 +107,21 @@ export async function fetchStats(): Promise<Stats | null> {
 export async function resetData(): Promise<boolean> {
   try {
     await request(`${BASE}/reset`, { method: "POST" });
-    toast.success("Data reset to defaults");
+    toast.success("List reset to 36 default actresses");
     return true;
   } catch (e: any) {
     toast.error("Failed to reset data");
+    return false;
+  }
+}
+
+export async function clearTiers(): Promise<boolean> {
+  try {
+    await request(`${BASE}/clear-tiers`, { method: "POST" });
+    toast.success("All actresses moved to unranked");
+    return true;
+  } catch (e: any) {
+    toast.error("Failed to clear tiers");
     return false;
   }
 }

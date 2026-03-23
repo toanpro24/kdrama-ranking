@@ -829,11 +829,27 @@ def get_watchlist(user=Depends(require_user)):
     return result
 
 
-# ── POST reset (re-seed, admin-protected) ──
-@app.post("/api/reset", dependencies=[Depends(_require_admin)])
-def reset_data():
-    seed()
-    return {"message": "Data reset to defaults"}
+# ── POST reset (back to 36 defaults, per-user) ──
+@app.post("/api/reset")
+def reset_data(user=Depends(require_user)):
+    """Reset user's list back to the 36 default actresses, all unranked."""
+    uid = user["uid"]
+    # Clear user's actress list, tiers, and drama statuses
+    user_actresses_collection.delete_many({"userId": uid})
+    user_rankings_collection.delete_many({"userId": uid})
+    user_drama_status_collection.delete_many({"userId": uid})
+    # Re-seed with defaults
+    _ensure_user_list(uid)
+    return {"message": "List reset to 36 default actresses"}
+
+
+# ── POST clear tiers (move all to unranked, per-user) ──
+@app.post("/api/clear-tiers")
+def clear_tiers(user=Depends(require_user)):
+    """Move all of the user's actresses back to the unranked pool (keep the full list)."""
+    uid = user["uid"]
+    result = user_rankings_collection.delete_many({"userId": uid})
+    return {"message": f"Cleared {result.deleted_count} tier assignments"}
 
 
 async def _find_tmdb_person(name: str, known_drama: str | None = None) -> int | None:

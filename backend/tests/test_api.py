@@ -394,21 +394,31 @@ class TestGetWatchlist:
 
 class TestReset:
     @pytest.mark.anyio
-    async def test_reset_without_admin_key(self, client_authed):
-        resp = await client_authed.post("/api/reset")
-        assert resp.status_code == 403
+    async def test_reset_requires_auth(self, client_guest):
+        resp = await client_guest.post("/api/reset")
+        assert resp.status_code == 401
 
     @pytest.mark.anyio
-    @patch("main.seed")
-    async def test_reset_with_admin_key(self, mock_seed, client_authed):
-        from main import _require_admin, app as test_app
-
-        test_app.dependency_overrides[_require_admin] = lambda: None
-
+    async def test_reset_clears_user_data(self, client_authed):
         resp = await client_authed.post("/api/reset")
         assert resp.status_code == 200
-        assert resp.json()["message"] == "Data reset to defaults"
-        mock_seed.assert_called_once()
+        assert resp.json()["message"] == "List reset to 36 default actresses"
+        _mock_user_actresses.delete_many.assert_called()
+        _mock_rankings.delete_many.assert_called()
 
-        if _require_admin in test_app.dependency_overrides:
-            del test_app.dependency_overrides[_require_admin]
+
+class TestClearTiers:
+    @pytest.mark.anyio
+    async def test_clear_tiers_requires_auth(self, client_guest):
+        resp = await client_guest.post("/api/clear-tiers")
+        assert resp.status_code == 401
+
+    @pytest.mark.anyio
+    async def test_clear_tiers_authenticated(self, client_authed):
+        mock_result = MagicMock()
+        mock_result.deleted_count = 5
+        _mock_rankings.delete_many.return_value = mock_result
+
+        resp = await client_authed.post("/api/clear-tiers")
+        assert resp.status_code == 200
+        assert "Cleared" in resp.json()["message"]

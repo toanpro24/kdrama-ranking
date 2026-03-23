@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toPng } from "html-to-image";
 import type { Actress } from "./types";
-import { createActress, updateTier, deleteActress, resetData, searchActressOnline, getActressFromTMDB } from "./api";
+import { createActress, updateTier, deleteActress, resetData, clearTiers, searchActressOnline, getActressFromTMDB } from "./api";
 import type { ActressSearchResult } from "./api";
 import { TIERS, GENRES } from "./constants";
 import { useActresses } from "./ActressContext";
@@ -242,9 +242,18 @@ export default function App() {
     setDeleteConfirm(null);
   }, [deleteConfirm, removeActress]);
 
+  const [resetConfirm, setResetConfirm] = useState<"reset" | "clear" | null>(null);
+
   const handleReset = useCallback(async () => {
     await resetData();
     await reload();
+    setResetConfirm(null);
+  }, [reload]);
+
+  const handleClearTiers = useCallback(async () => {
+    await clearTiers();
+    await reload();
+    setResetConfirm(null);
   }, [reload]);
 
   const handleShareTierList = useCallback(async () => {
@@ -378,15 +387,44 @@ export default function App() {
         </div>
       )}
 
-      {/* Reset Confirmation */}
-      {showResetConfirm && (
+      {/* Reset Options */}
+      {showResetConfirm && !resetConfirm && (
         <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="reset-modal-title" onClick={() => setShowResetConfirm(false)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title" id="reset-modal-title">Reset All Rankings?</h3>
-            <p className="modal-text">This will remove all your tier placements, ratings, and watch statuses. This action cannot be undone.</p>
-            <div className="modal-actions">
+            <h3 className="modal-title" id="reset-modal-title">Reset Options</h3>
+            <p className="modal-text">Choose what you'd like to do:</p>
+            <div className="modal-actions" style={{ flexDirection: "column", gap: "10px" }}>
+              <button className="modal-btn danger" onClick={() => setResetConfirm("clear")}>Clear All Tiers</button>
+              <button className="modal-btn danger" onClick={() => setResetConfirm("reset")}>Reset to 36 Defaults</button>
               <button className="modal-btn cancel" onClick={() => setShowResetConfirm(false)}>Cancel</button>
-              <button className="modal-btn danger" onClick={() => { setShowResetConfirm(false); handleReset(); }}>Yes, Reset Everything</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Clear Tiers Confirmation */}
+      {resetConfirm === "clear" && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => { setResetConfirm(null); setShowResetConfirm(false); }}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal-title">Clear All Tiers?</h3>
+            <p className="modal-text">This will move all your actresses back to the unranked pool. Your full list of {actresses.length} actresses will be kept — only tier placements are removed.</p>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => { setResetConfirm(null); setShowResetConfirm(false); }}>Cancel</button>
+              <button className="modal-btn danger" onClick={handleClearTiers}>Yes, Clear Tiers</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full Reset Confirmation */}
+      {resetConfirm === "reset" && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" onClick={() => { setResetConfirm(null); setShowResetConfirm(false); }}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal-title">Reset to Defaults?</h3>
+            <p className="modal-text">This will remove all user-added actresses and reset your list back to the original 36 defaults. All tier placements, ratings, and watch statuses will be lost. This cannot be undone.</p>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => { setResetConfirm(null); setShowResetConfirm(false); }}>Cancel</button>
+              <button className="modal-btn danger" onClick={handleReset}>Yes, Reset Everything</button>
             </div>
           </div>
         </div>
