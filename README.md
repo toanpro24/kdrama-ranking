@@ -1,33 +1,120 @@
-# K-Drama Actress Ranking
+# K-Drama Actress Tier List
 
-A full-stack web app for ranking and tier-listing K-Drama actresses. Browse actresses, explore their dramas, assign tier rankings (S+, S, A, B, C, D), and view stats.
+A full-stack web app for ranking Korean drama actresses into tiers, tracking your drama watchlist, and discovering new shows through AI-powered recommendations.
+
+**Live:** [kdrama-ranking-1.vercel.app](https://kdrama-ranking-1.vercel.app/)
+
+## Features
+
+### Tier Ranking System
+- Drag-and-drop actresses into 6 tiers (S+, S, A, B, C, D)
+- Touch drag support on mobile (long-press to pick up)
+- Search, filter by genre, and sort the unranked pool
+- Export your tier list as a PNG image
+
+### Actress Profiles
+- Detailed profiles with bio, photo gallery, filmography, and awards
+- Auto-populated from TMDB (The Movie Database)
+- Gallery size scales with tier placement
+- Filmography split into K-Dramas vs TV Shows
+
+### Drama Tracking
+- Rate dramas 1-10 stars
+- Track watch status: Watching, Plan to Watch, Watched, Dropped
+- Dedicated watchlist page with filters
+- Drama detail pages with cast, synopsis, and metadata
+
+### Discovery
+- **Browse Dramas** — timeline view of all dramas by year
+- **Compare** — side-by-side actress comparison with shared dramas highlighted
+- **Stats** — tier distribution, genre breakdown, full roster view
+- **For You** — AI-powered drama recommendations based on your rankings and ratings
+
+### AI Chat Assistant
+- Ask questions about K-dramas and get personalized suggestions
+- Context-aware — knows your watch history and tier preferences
+- Powered by Claude (Anthropic)
+
+### Authentication
+- Sign in with Google (Firebase) to save your data across devices
+- Guest mode available for browsing without an account
 
 ## Tech Stack
 
-- **Frontend:** React + TypeScript + Vite
-- **Backend:** Python + FastAPI
-- **Database:** MongoDB
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React 19, TypeScript, Vite |
+| Backend | Python, FastAPI, httpx (async) |
+| Database | MongoDB (Atlas) |
+| Auth | Firebase Authentication |
+| AI | Anthropic Claude API |
+| External Data | TMDB API |
+| Testing | Vitest + RTL + MSW (frontend), pytest + respx (backend) |
+| Deployment | Vercel (frontend), Railway (backend), MongoDB Atlas |
 
-## Prerequisites
+## Project Structure
 
-- [Node.js](https://nodejs.org/) (v18+)
-- [Python](https://www.python.org/downloads/) (3.10+)
-- [MongoDB](https://www.mongodb.com/try/download/community) running on `localhost:27017`
+```
+kdrama-ranking/
+├── frontend/
+│   ├── src/
+│   │   ├── App.tsx              # Main tier list page
+│   │   ├── ActressDetail.tsx    # Actress profile page
+│   │   ├── DramaDetail.tsx      # Drama detail page
+│   │   ├── Compare.tsx          # Side-by-side comparison
+│   │   ├── Timeline.tsx         # Browse dramas by year
+│   │   ├── Recommendations.tsx  # AI-powered recommendations + chat
+│   │   ├── StatsPage.tsx        # Ranking statistics
+│   │   ├── Watchlist.tsx        # Drama watch tracking
+│   │   ├── ActressContext.tsx   # Shared state (SWR pattern)
+│   │   ├── AuthContext.tsx      # Firebase auth provider
+│   │   ├── ErrorBoundary.tsx    # Global error boundary
+│   │   ├── useTouchDrag.ts     # Mobile drag-and-drop hook
+│   │   ├── api.ts              # API client
+│   │   ├── styles/             # Modular CSS (10 files)
+│   │   └── __tests__/          # 70 frontend tests
+│   └── package.json
+├── backend/
+│   ├── main.py                 # FastAPI app (all endpoints)
+│   ├── models.py               # Pydantic schemas
+│   ├── auth.py                 # Firebase token verification
+│   ├── database.py             # MongoDB connection
+│   ├── seed.py                 # Initial data seeding
+│   ├── drama_metadata.py       # Preloaded drama metadata
+│   └── tests/                  # 106 backend tests
+├── render.yaml                 # Render deployment config
+├── run.bat / run.sh            # One-command local launchers
+└── README.md
+```
 
 ## Getting Started
 
-### Backend
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) v18+
+- [Python](https://www.python.org/downloads/) 3.10+
+- [MongoDB](https://www.mongodb.com/try/download/community) running locally
+
+### Quick Start (Windows)
+
+```bash
+run.bat
+```
+
+This installs dependencies and launches both servers. The app opens at `http://localhost:5173`.
+
+### Manual Setup
+
+**Backend:**
 
 ```bash
 cd backend
 pip install -r requirements.txt
-cp .env.example .env
+cp .env.example .env   # Edit with your API keys
 python -m uvicorn main:app --reload
 ```
 
-The API will be available at `http://localhost:8000` with interactive docs at `http://localhost:8000/docs`.
-
-### Frontend
+**Frontend:**
 
 ```bash
 cd frontend
@@ -35,54 +122,91 @@ npm install
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173`.
+### Environment Variables
 
-### Quick Start (Windows)
+#### Backend (`backend/.env`)
 
-Run `run.bat` to install dependencies and launch both servers automatically.
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `MONGODB_URI` | Yes | MongoDB connection string |
+| `TMDB_API_KEY` | Yes | [TMDB API](https://www.themoviedb.org/settings/api) key for actress/drama data |
+| `FIREBASE_PROJECT_ID` | Yes | Firebase project ID |
+| `FIREBASE_CLIENT_EMAIL` | Yes | Firebase service account email |
+| `FIREBASE_PRIVATE_KEY` | Yes | Firebase service account private key |
+| `ADMIN_API_KEY` | Yes | Secret key for admin endpoints |
+| `ALLOWED_ORIGINS` | No | Comma-separated CORS origins (defaults to localhost) |
+| `ANTHROPIC_API_KEY` | No | Claude API key for AI recommendations |
 
-## Deploying Online
+#### Frontend (`frontend/.env`)
 
-### 1. Database — MongoDB Atlas (free)
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `VITE_API_URL` | Yes | Backend API base URL (e.g. `http://localhost:8000/api`) |
 
-1. Create an account at [mongodb.com/atlas](https://www.mongodb.com/atlas)
-2. Create a free shared cluster
-3. Create a database user and whitelist `0.0.0.0/0` for access
-4. Get your connection string: `mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/kdrama_ranking`
+## Running Tests
 
-### 2. Backend — Render (free)
+```bash
+# Frontend (70 tests)
+cd frontend && npx vitest run
 
-1. Push this repo to GitHub
-2. Go to [render.com](https://render.com) → **New** → **Web Service**
-3. Connect your GitHub repo, set **Root Directory** to `backend`
-4. Settings:
-   - **Build Command:** `pip install -r requirements.txt`
-   - **Start Command:** `gunicorn main:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT`
-5. Add environment variable: `MONGODB_URI` = your Atlas connection string
-6. Deploy — note your URL (e.g. `https://kdrama-ranking-api.onrender.com`)
-
-### 3. Frontend — Vercel (free)
-
-1. Go to [vercel.com](https://vercel.com) → **New Project** → import your GitHub repo
-2. Settings:
-   - **Root Directory:** `frontend`
-   - **Framework Preset:** Vite
-3. Add environment variable: `VITE_API_URL` = `https://kdrama-ranking-api.onrender.com/api`
-4. Deploy
-
-Your app will be live at the Vercel URL.
+# Backend (106 tests)
+cd backend && python -m pytest tests/ -v
+```
 
 ## API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/actresses` | List all actresses (supports `genre` and `search` query params) |
-| GET | `/api/actresses/:id` | Get a single actress |
-| POST | `/api/actresses` | Add a new actress |
-| PATCH | `/api/actresses/:id/tier` | Update an actress's tier |
-| PATCH | `/api/actresses/bulk-tier` | Bulk update tiers |
-| DELETE | `/api/actresses/:id` | Delete an actress |
-| GET | `/api/dramas` | List all dramas |
-| GET | `/api/dramas/:title` | Get drama details |
-| GET | `/api/stats` | Get ranking statistics |
-| POST | `/api/reset` | Reset data to defaults |
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/api/actresses` | Optional | List actresses (supports `genre`, `search` params) |
+| GET | `/api/actresses/:id` | Optional | Get actress details with user-specific ratings |
+| POST | `/api/actresses` | No | Add new actress (TMDB or manual) |
+| PATCH | `/api/actresses/:id/tier` | Required | Update tier placement |
+| DELETE | `/api/actresses/:id` | Admin | Delete an actress |
+| GET | `/api/dramas/:title` | Optional | Get drama details with cast |
+| PATCH | `/api/actresses/:id/drama-status` | Required | Update watch status |
+| PATCH | `/api/actresses/:id/drama-rating` | Required | Rate a drama (1-10) |
+| GET | `/api/watchlist` | Required | Get user's watchlist |
+| GET | `/api/stats` | Optional | Tier and genre statistics |
+| GET | `/api/search-actress` | No | Search TMDB for actresses (rate limited) |
+| GET | `/api/search-actress/:tmdb_id` | No | Fetch full actress data from TMDB |
+| POST | `/api/chat` | No | AI chat (streaming, rate limited) |
+| POST | `/api/refresh-all` | Admin | Refresh all TMDB data |
+| POST | `/api/reset` | Admin | Reset to seed data |
+
+Interactive API docs available at `/docs` when running locally.
+
+## Deployment
+
+### Database — MongoDB Atlas (free)
+
+1. Create a free cluster at [mongodb.com/atlas](https://www.mongodb.com/atlas)
+2. Create a database user and whitelist `0.0.0.0/0`
+3. Copy the connection string
+
+### Backend — Railway
+
+1. Push to GitHub
+2. Create a new project on [railway.app](https://railway.app)
+3. Set root directory to `backend`
+4. Add environment variables (see table above)
+5. Deploy
+
+### Frontend — Vercel
+
+1. Import your GitHub repo on [vercel.com](https://vercel.com)
+2. Set root directory to `frontend`, framework preset to Vite
+3. Add `VITE_API_URL` pointing to your backend
+4. Deploy
+
+## Security
+
+- CORS restricted to configured origins (no wildcard in production)
+- Firebase token verification on all authenticated endpoints
+- Admin endpoints require a separate API key
+- Rate limiting on expensive operations (TMDB search, AI chat, data refresh)
+- TMDB API key never exposed to the client
+- In-memory TTL cache (10 min) to reduce external API calls
+
+## License
+
+MIT
