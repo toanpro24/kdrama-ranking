@@ -9,9 +9,12 @@ interface Props {
   canEdit: boolean;
   onRemove: (id: string) => void;
   onDragStart: (e: React.DragEvent, actress: Actress) => void;
+  onTouchStart?: (e: React.TouchEvent, actressId: string) => void;
+  onTouchMove?: (e: React.TouchEvent) => void;
+  onTouchEnd?: () => void;
 }
 
-export default function ActressCard({ actress, color, canEdit, onRemove, onDragStart }: Props) {
+export default function ActressCard({ actress, color, canEdit, onRemove, onDragStart, onTouchStart, onTouchMove, onTouchEnd }: Props) {
   const [hovered, setHovered] = useState(false);
   const [popupPos, setPopupPos] = useState<"below" | "above">("below");
   const cardRef = useRef<HTMLDivElement>(null);
@@ -59,6 +62,9 @@ export default function ActressCard({ actress, color, canEdit, onRemove, onDragS
         aria-label={`${actress.name}, known for ${actress.known}, ${actress.genre}${tier ? `, ${tier.label} tier` : ", unranked"}`}
         draggable={canEdit}
         onDragStart={canEdit ? (e) => { clearTimeout(showTimer.current); clearTimeout(hideTimer.current); setHovered(false); onDragStart(e, actress); } : undefined}
+        onTouchStart={canEdit && onTouchStart ? (e) => onTouchStart(e, actress._id) : undefined}
+        onTouchMove={canEdit && onTouchMove ? onTouchMove : undefined}
+        onTouchEnd={canEdit && onTouchEnd ? onTouchEnd : undefined}
         onClick={handleClick}
         onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(`/actress/${actress._id}`); } }}
         style={{ borderLeftColor: color, cursor: canEdit ? "grab" : "pointer" }}

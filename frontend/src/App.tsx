@@ -7,6 +7,7 @@ import type { ActressSearchResult } from "./api";
 import { TIERS, GENRES } from "./constants";
 import { useActresses } from "./ActressContext";
 import { useAuth } from "./AuthContext";
+import { useTouchDrag } from "./useTouchDrag";
 import ActressCard from "./ActressCard";
 import "./index.css";
 
@@ -155,6 +156,22 @@ export default function App() {
     updateActressTier(actressId, targetTier);
     await updateTier(actressId, targetTier);
   }, [user]);
+
+  // Touch drag-and-drop for mobile
+  const handleTouchDrop = useCallback(async (actressId: string, targetTier: string | null) => {
+    if (!user) return;
+    const actress = actresses.find((a) => a._id === actressId);
+    if (!actress) return;
+    const sourceTier = actress.tier || null;
+    if (sourceTier === targetTier) return;
+    updateActressTier(actressId, targetTier);
+    await updateTier(actressId, targetTier);
+  }, [user, actresses, updateActressTier]);
+
+  const { handleTouchStart, handleTouchMove, handleTouchEnd } = useTouchDrag({
+    onDrop: handleTouchDrop,
+    onDragOverTier: setDragOverTier,
+  });
 
   const handleNameChange = useCallback((val: string) => {
     setNewName(val);
@@ -415,6 +432,7 @@ export default function App() {
             {TIERS.map((tier, i) => (
               <div
                 key={tier.id}
+                data-tier-id={tier.id}
                 className={`tier-row ${dragOverTier === tier.id ? "drag-over" : ""}`}
                 style={{ animationDelay: `${i * 0.07}s` }}
                 onDragOver={(e) => { handleDragOver(e); setDragOverTier(tier.id); }}
@@ -427,7 +445,7 @@ export default function App() {
                 </div>
                 <div className="tier-content">
                   {tierActresses[tier.id]?.map((a) => (
-                    <ActressCard key={a._id} actress={a} color={tier.color} canEdit={!!user} onRemove={handleRemove} onDragStart={handleDragStart} />
+                    <ActressCard key={a._id} actress={a} color={tier.color} canEdit={!!user} onRemove={handleRemove} onDragStart={handleDragStart} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} />
                   ))}
                   {(!tierActresses[tier.id] || tierActresses[tier.id].length === 0) && (
                     <div className="empty-hint">Drag actresses here</div>
@@ -439,6 +457,7 @@ export default function App() {
 
           {/* Unranked Pool */}
           <section
+            data-tier-id="unranked"
             className={`unranked-section ${dragOverTier === "unranked" ? "drag-over" : ""}`}
             onDragOver={(e) => { handleDragOver(e); setDragOverTier("unranked"); }}
             onDragLeave={() => setDragOverTier(null)}
@@ -471,7 +490,7 @@ export default function App() {
             </div>
             <div className="unranked-grid">
               {filteredUnranked.map((a) => (
-                <ActressCard key={a._id} actress={a} color="#555" canEdit={!!user} onRemove={handleRemove} onDragStart={handleDragStart} />
+                <ActressCard key={a._id} actress={a} color="#555" canEdit={!!user} onRemove={handleRemove} onDragStart={handleDragStart} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} />
               ))}
               {filteredUnranked.length === 0 && (
                 <div className="empty-hint">{unranked.length === 0 ? "All ranked! Add more above." : "No matches found."}</div>

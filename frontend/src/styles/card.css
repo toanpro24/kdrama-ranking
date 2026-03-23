@@ -40,6 +40,12 @@
 }
 .actress-card:hover .remove-btn { opacity: 1; }
 
+/* ── Touch Drag Ghost ── */
+.touch-drag-ghost {
+  background: rgba(20, 20, 24, 0.95) !important;
+  border-left: 4px solid #e500a4 !important;
+}
+
 /* ── Card Wrap (for popup positioning) ── */
 .actress-card-wrap {
   position: relative;
