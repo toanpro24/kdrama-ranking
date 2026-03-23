@@ -244,10 +244,11 @@ export default function App() {
     }
   }, []);
 
-  if (loading) return <div className="loading">Loading actresses...</div>;
+  if (loading) return <div className="loading" role="status" aria-live="polite">Loading actresses...</div>;
 
   return (
     <div>
+      <a href="#main-content" className="skip-link">Skip to main content</a>
       {/* Hero */}
       <header className="hero" style={{ opacity: heroVisible ? 1 : 0, transform: heroVisible ? "none" : "translateY(30px)" }}>
         <div className="hero-glow" />
@@ -290,14 +291,14 @@ export default function App() {
       </header>
 
       {/* Nav */}
-      <nav className="nav">
-        <div className="nav-tabs">
-          <button onClick={() => navigate("/")} className="nav-tab active">⚡ Tier List</button>
-          <button onClick={() => navigate("/stats")} className="nav-tab">📊 Stats</button>
-          <button onClick={() => navigate("/compare")} className="nav-tab">⚔ Compare</button>
-          <button onClick={() => navigate("/timeline")} className="nav-tab">🎬 Browse Dramas</button>
-          <button onClick={() => navigate("/recommendations")} className="nav-tab">💡 For You</button>
-          <button onClick={() => navigate("/watchlist")} className="nav-tab">📺 Watch List</button>
+      <nav className="nav" aria-label="Main navigation">
+        <div className="nav-tabs" role="tablist">
+          <button onClick={() => navigate("/")} className="nav-tab active" role="tab" aria-selected="true" aria-current="page">⚡ Tier List</button>
+          <button onClick={() => navigate("/stats")} className="nav-tab" role="tab" aria-selected="false">📊 Stats</button>
+          <button onClick={() => navigate("/compare")} className="nav-tab" role="tab" aria-selected="false">⚔ Compare</button>
+          <button onClick={() => navigate("/timeline")} className="nav-tab" role="tab" aria-selected="false">🎬 Browse Dramas</button>
+          <button onClick={() => navigate("/recommendations")} className="nav-tab" role="tab" aria-selected="false">💡 For You</button>
+          <button onClick={() => navigate("/watchlist")} className="nav-tab" role="tab" aria-selected="false">📺 Watch List</button>
         </div>
         <div className="nav-actions">
           <button onClick={handleShareTierList} className="nav-btn share-btn">📷 Share Tier List</button>
@@ -338,9 +339,9 @@ export default function App() {
 
       {/* Reset Confirmation */}
       {showResetConfirm && (
-        <div className="modal-overlay" onClick={() => setShowResetConfirm(false)}>
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="reset-modal-title" onClick={() => setShowResetConfirm(false)}>
           <div className="modal-box" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title">Reset All Rankings?</h3>
+            <h3 className="modal-title" id="reset-modal-title">Reset All Rankings?</h3>
             <p className="modal-text">This will remove all your tier placements, ratings, and watch statuses. This action cannot be undone.</p>
             <div className="modal-actions">
               <button className="modal-btn cancel" onClick={() => setShowResetConfirm(false)}>Cancel</button>
@@ -409,8 +410,8 @@ export default function App() {
       )}
 
       {/* Tier List */}
-      <main className="main-content" style={{ opacity: tiersVisible ? 1 : 0, transform: tiersVisible ? "none" : "translateY(20px)", transition: "all 0.6s ease" }}>
-          <section className="tiers-section" ref={tiersRef}>
+      <main id="main-content" className="main-content" aria-label="Tier list and unranked pool" style={{ opacity: tiersVisible ? 1 : 0, transform: tiersVisible ? "none" : "translateY(20px)", transition: "all 0.6s ease" }}>
+          <section className="tiers-section" ref={tiersRef} aria-label="Tier rankings">
             {TIERS.map((tier, i) => (
               <div
                 key={tier.id}
@@ -451,17 +452,17 @@ export default function App() {
               <div className="filter-bar">
                 <div className="search-wrap">
                   <span className="search-icon">⌕</span>
-                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search actresses..." className="search-input" />
+                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search actresses..." className="search-input" aria-label="Search actresses" />
                 </div>
-                <div className="genre-pills">
+                <div className="genre-pills" role="group" aria-label="Filter by genre">
                   {GENRES.map((g) => (
-                    <button key={g} onClick={() => setGenreFilter(g)} className={`genre-pill ${genreFilter === g ? "active" : ""}`}>{g}</button>
+                    <button key={g} onClick={() => setGenreFilter(g)} className={`genre-pill ${genreFilter === g ? "active" : ""}`} aria-pressed={genreFilter === g}>{g}</button>
                   ))}
                 </div>
-                <div className="sort-pills">
+                <div className="sort-pills" role="group" aria-label="Sort options">
                   <span className="sort-label">Sort:</span>
                   {(["default", "name", "year", "genre"] as const).map((s) => (
-                    <button key={s} onClick={() => setSortBy(s)} className={`sort-pill ${sortBy === s ? "active" : ""}`}>
+                    <button key={s} onClick={() => setSortBy(s)} className={`sort-pill ${sortBy === s ? "active" : ""}`} aria-pressed={sortBy === s}>
                       {s === "default" ? "Default" : s === "name" ? "A→Z" : s === "year" ? "Year ↓" : "Genre"}
                     </button>
                   ))}

@@ -54,9 +54,13 @@ export default function ActressCard({ actress, color, canEdit, onRemove, onDragS
     >
       <div
         className="actress-card"
+        role="button"
+        tabIndex={0}
+        aria-label={`${actress.name}, known for ${actress.known}, ${actress.genre}${tier ? `, ${tier.label} tier` : ", unranked"}`}
         draggable={canEdit}
         onDragStart={canEdit ? (e) => { clearTimeout(showTimer.current); clearTimeout(hideTimer.current); setHovered(false); onDragStart(e, actress); } : undefined}
         onClick={handleClick}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); navigate(`/actress/${actress._id}`); } }}
         style={{ borderLeftColor: color, cursor: canEdit ? "grab" : "pointer" }}
       >
         <img
@@ -79,7 +83,7 @@ export default function ActressCard({ actress, color, canEdit, onRemove, onDragS
             )}
           </div>
         </div>
-        {canEdit && <button className="remove-btn" onClick={() => onRemove(actress._id)} title="Remove">✕</button>}
+        {canEdit && <button className="remove-btn" onClick={() => onRemove(actress._id)} aria-label={`Remove ${actress.name}`} title="Remove">✕</button>}
       </div>
 
       {hovered && (

@@ -44,7 +44,7 @@ export default function DramaDetail() {
       .catch(() => setLoading(false));
   }, [title, authLoading, user]);
 
-  if (loading) return <div className="loading-page"><div className="loading-spinner" /><span className="loading-text">Loading drama...</span></div>;
+  if (loading) return <div className="loading-page" role="status" aria-live="polite"><div className="loading-spinner" aria-hidden="true" /><span className="loading-text">Loading drama...</span></div>;
   if (!drama) return <div className="error-page"><span className="error-icon">!</span><span className="error-message">Drama not found</span><button className="error-retry" onClick={() => navigate(-1)}>Go back</button></div>;
 
   const fallbackPoster = `https://ui-avatars.com/api/?name=${encodeURIComponent(drama.title)}&size=400&background=1a1a2e&color=fff&bold=true&length=2`;
@@ -82,11 +82,12 @@ export default function DramaDetail() {
               {drama.runtime && <span className="drama-meta-pill runtime-pill">{drama.runtime} min/ep</span>}
             </div>
             {drama.genre && <p className="drama-genre-line">{drama.genre}</p>}
-            <div className="watch-status-row drama-watch-status">
+            <div className="watch-status-row drama-watch-status" role="group" aria-label="Watch status">
               {(["watched", "watching", "plan_to_watch", "dropped"] as WatchStatus[]).map((ws) => (
                 <button
                   key={ws}
                   className={`watch-btn ${drama.watchStatus === ws ? "active" : ""} ws-${ws} ${!user ? "disabled" : ""}`}
+                  aria-pressed={drama.watchStatus === ws}
                   disabled={!user}
                   onClick={async () => {
                     if (!user || !drama.actressId) return;

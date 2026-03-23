@@ -35,7 +35,7 @@ export default function ActressDetail() {
   }, [id, updateDrama]);
 
 
-  if (loading) return <div className="loading-page"><div className="loading-spinner" /><span className="loading-text">Loading profile...</span></div>;
+  if (loading) return <div className="loading-page" role="status" aria-live="polite"><div className="loading-spinner" aria-hidden="true" /><span className="loading-text">Loading profile...</span></div>;
   if (!actress) return <div className="error-page"><span className="error-icon">!</span><span className="error-message">Actress not found</span><button className="error-retry" onClick={() => navigate(-1)}>Go back</button></div>;
 
   const tier = actress.tier ? TIER_MAP[actress.tier] : null;
@@ -176,11 +176,16 @@ export default function ActressDetail() {
                   {drama.role && <span className="detail-drama-role">as {drama.role}</span>}
                 </div>
               </div>
-              <div className="drama-rating" onClick={(e) => e.stopPropagation()}>
+              <div className="drama-rating" role="group" aria-label={`Rate ${drama.title}`} onClick={(e) => e.stopPropagation()}>
                 {[...Array(10)].map((_, s) => (
                   <span
                     key={s}
+                    role="button"
+                    tabIndex={user ? 0 : -1}
+                    aria-label={`${s + 1} star${s > 0 ? "s" : ""}`}
+                    aria-pressed={(drama.rating || 0) > s}
                     className={`rating-star ${(drama.rating || 0) > s ? "filled" : ""} ${!user ? "disabled" : ""}`}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); (e.target as HTMLElement).click(); } }}
                     onClick={async () => {
                       if (!user) return;
                       const newRating = s + 1 === drama.rating ? null : s + 1;
@@ -193,11 +198,12 @@ export default function ActressDetail() {
                 ))}
                 {drama.rating && <span className="rating-value">{drama.rating}/10</span>}
               </div>
-              <div className="watch-status-row" onClick={(e) => e.stopPropagation()}>
+              <div className="watch-status-row" role="group" aria-label={`Watch status for ${drama.title}`} onClick={(e) => e.stopPropagation()}>
                 {(["watched", "watching", "plan_to_watch", "dropped"] as WatchStatus[]).map((ws) => (
                   <button
                     key={ws}
                     className={`watch-btn ${drama.watchStatus === ws ? "active" : ""} ws-${ws} ${!user ? "disabled" : ""}`}
+                    aria-pressed={drama.watchStatus === ws}
                     disabled={!user}
                     onClick={async () => {
                       if (!user) return;
