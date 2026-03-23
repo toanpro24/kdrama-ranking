@@ -1,6 +1,7 @@
 import asyncio
 import json
 import os
+import time
 import urllib.parse
 from contextlib import asynccontextmanager
 
@@ -308,15 +309,32 @@ GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
 GOOGLE_CSE_ID = os.getenv("GOOGLE_CSE_ID", "")
 
 
+_tmdb_cache: dict[str, tuple[float, dict]] = {}
+_TMDB_CACHE_TTL = 600  # 10 minutes
+
+
 async def _tmdb_get(path: str, params: dict) -> dict:
     if not TMDB_API_KEY:
         raise HTTPException(status_code=503, detail="TMDB_API_KEY not configured")
+    cache_key = f"{path}:{json.dumps(params, sort_keys=True)}"
+    now = time.monotonic()
+    cached = _tmdb_cache.get(cache_key)
+    if cached and now - cached[0] < _TMDB_CACHE_TTL:
+        return cached[1]
     params["api_key"] = TMDB_API_KEY
     url = f"https://api.themoviedb.org/3{path}?{urllib.parse.urlencode(params)}"
     client = _get_http_client()
     resp = await client.get(url, headers={"Accept": "application/json"})
     resp.raise_for_status()
-    return resp.json()
+    data = resp.json()
+    _tmdb_cache[cache_key] = (now, data)
+    # Evict old entries if cache grows too large
+    if len(_tmdb_cache) > 500:
+        cutoff = now - _TMDB_CACHE_TTL
+        expired = [k for k, (t, _) in _tmdb_cache.items() if t < cutoff]
+        for k in expired:
+            del _tmdb_cache[k]
+    return data
 
 
 @app.get("/api/search-actress")

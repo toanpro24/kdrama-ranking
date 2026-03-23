@@ -1,7 +1,9 @@
-import { createContext, useContext, useState, useCallback, useEffect } from "react";
+import { createContext, useContext, useState, useCallback, useEffect, useRef } from "react";
 import type { Actress } from "./types";
 import { fetchActresses } from "./api";
 import { useAuth } from "./AuthContext";
+
+const STALE_TIME = 60_000; // 1 minute — serve stale data while revalidating
 
 interface ActressContextValue {
   actresses: Actress[];
@@ -21,18 +23,27 @@ export function ActressProvider({ children }: { children: React.ReactNode }) {
   const [actresses, setActresses] = useState<Actress[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const lastFetch = useRef(0);
 
-  const reload = useCallback(async () => {
-    setLoading(true);
+  const reload = useCallback(async (force = false) => {
+    const now = Date.now();
+    const hasData = actresses.length > 0;
+
+    // SWR: if data is fresh, skip fetch
+    if (!force && hasData && now - lastFetch.current < STALE_TIME) return;
+
+    // Only show loading spinner on first load (no stale data to show)
+    if (!hasData) setLoading(true);
     setError(false);
     const data = await fetchActresses();
     setActresses(data);
+    lastFetch.current = Date.now();
     setLoading(false);
-  }, []);
+  }, [actresses.length]);
 
   useEffect(() => {
-    if (!authLoading) reload();
-  }, [user, authLoading, reload]);
+    if (!authLoading) reload(true);
+  }, [user, authLoading]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const addActress = useCallback((actress: Actress) => {
     setActresses((prev) => [...prev, actress]);

@@ -130,10 +130,11 @@ def _make_doc(doc: dict | None = None) -> dict:
 
 @pytest.fixture(autouse=True)
 def _reset_mocks():
-    """Reset all collection mocks before each test."""
+    """Reset all collection mocks and TMDB cache before each test."""
     _mock_actresses.reset_mock()
     _mock_rankings.reset_mock()
     _mock_drama_status.reset_mock()
+    main_module._tmdb_cache.clear()
     yield
 
 
