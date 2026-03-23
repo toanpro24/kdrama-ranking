@@ -75,7 +75,7 @@ export default function Compare() {
         <h3 className="compare-section-title">Filmography</h3>
         <div className="compare-drama-list">
           {(actress.dramas || []).filter((d) => d.category !== "show").map((d, i) => (
-            <div key={i} className={`compare-drama-item ${sharedDramas.includes(d.title) ? "shared" : ""}`}>
+            <div key={i} className={`compare-drama-item clickable ${sharedDramas.includes(d.title) ? "shared" : ""}`} onClick={() => navigate(`/drama/${encodeURIComponent(d.title)}`)}>
               <span className="compare-drama-title">{d.title}</span>
               <span className="compare-drama-year">{d.year}</span>
               {d.rating && <span className="compare-drama-rating">★ {d.rating}</span>}

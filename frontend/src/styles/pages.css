@@ -149,7 +149,10 @@
   display: flex; align-items: center; gap: 8px; padding: 6px 10px;
   border-radius: 8px; font-size: 13px; transition: background 0.15s;
 }
+.compare-drama-item.clickable { cursor: pointer; }
+.compare-drama-item.clickable:hover { background: rgba(255,255,255,0.06); }
 .compare-drama-item.shared { background: rgba(255,197,58,0.06); }
+.compare-drama-item.shared.clickable:hover { background: rgba(255,197,58,0.1); }
 .compare-drama-title { flex: 1; color: #ccc; font-weight: 500; }
 .compare-drama-year { color: #666; font-size: 12px; }
 .compare-drama-rating { color: #FFC53A; font-size: 12px; font-weight: 700; }
