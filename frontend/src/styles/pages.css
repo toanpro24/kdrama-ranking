@@ -25,6 +25,9 @@
   padding: 5px 14px; border-radius: 8px; border: 1px solid;
   font-size: 12px; font-weight: 600; color: #ccc; background: rgba(255,255,255,0.02);
 }
+.stats-search-wrap {
+  position: relative; max-width: 300px; margin-bottom: 16px;
+}
 
 /* ── Compare Page ── */
 .compare-title {
@@ -268,4 +271,7 @@
 .recs-empty {
   grid-column: 1 / -1; text-align: center; color: #555; padding: 60px 20px;
   font-size: 15px;
+}
+.watchlist-search-wrap {
+  position: relative; max-width: 400px; margin-bottom: 16px;
 }

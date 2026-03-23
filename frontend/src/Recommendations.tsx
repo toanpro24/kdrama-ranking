@@ -221,6 +221,7 @@ export default function Recommendations() {
                   className="recs-poster"
                   src={rec.poster}
                   alt={rec.dramaTitle}
+                  loading="lazy"
                   referrerPolicy="no-referrer"
                   onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                 />

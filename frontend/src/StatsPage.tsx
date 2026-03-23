@@ -10,6 +10,7 @@ export default function StatsPage() {
   const navigate = useNavigate();
   const { actresses, loading } = useActresses();
   const [stats, setStats] = useState<Stats | null>(null);
+  const [search, setSearch] = useState("");
 
   const loadStats = useCallback(async () => {
     const data = await fetchStats();
@@ -62,8 +63,13 @@ export default function StatsPage() {
             </div>
             <div className="stats-card" style={{ gridColumn: "1 / -1" }}>
               <h3 className="stats-card-title">Roster by Tier</h3>
+              <div className="stats-search-wrap">
+                <span className="search-icon">⌕</span>
+                <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search actresses..." className="search-input" aria-label="Search roster" />
+              </div>
               {TIERS.map((t) => {
-                const members = actresses.filter((a) => a.tier === t.id);
+                const q = search.toLowerCase();
+                const members = actresses.filter((a) => a.tier === t.id && (!q || a.name.toLowerCase().includes(q)));
                 return (
                   <div key={t.id} style={{ marginBottom: 20 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>

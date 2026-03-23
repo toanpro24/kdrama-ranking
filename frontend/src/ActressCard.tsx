@@ -73,6 +73,7 @@ export default function ActressCard({ actress, color, canEdit, onRemove, onDragS
           className="card-avatar"
           src={actress.image || fallbackImg}
           alt={actress.name}
+          loading="lazy"
           referrerPolicy="no-referrer"
           onError={(e) => { (e.target as HTMLImageElement).src = fallbackImg; }}
         />
@@ -98,6 +99,7 @@ export default function ActressCard({ actress, color, canEdit, onRemove, onDragS
             className="popup-image"
             src={actress.image || fallbackImg}
             alt={actress.name}
+            loading="lazy"
             referrerPolicy="no-referrer"
             onError={(e) => { (e.target as HTMLImageElement).src = fallbackImg; }}
           />

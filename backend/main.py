@@ -589,6 +589,7 @@ async def get_drama(title: str, user=Depends(get_current_user)):
 
     # Look up per-user watch status for this drama
     user_watch_status = None
+    user_rating = None
     user_actress_id = None
     if user:
         user_id = user["uid"]
@@ -597,6 +598,7 @@ async def get_drama(title: str, user=Depends(get_current_user)):
         )
         if status_doc:
             user_watch_status = status_doc.get("watchStatus")
+            user_rating = status_doc.get("rating")
             user_actress_id = status_doc.get("actressId")
     if not user_actress_id and results:
         user_actress_id = results[0]["actressId"]
@@ -606,6 +608,7 @@ async def get_drama(title: str, user=Depends(get_current_user)):
         "year": first["year"],
         "poster": first.get("poster"),
         "watchStatus": user_watch_status,
+        "rating": user_rating,
         "actressId": user_actress_id,
         "cast": [
             {
@@ -743,6 +746,7 @@ def get_watchlist(user=Depends(require_user)):
             "year": drama["year"],
             "poster": drama.get("poster"),
             "watchStatus": s["watchStatus"],
+            "rating": s.get("rating"),
             "actressId": s["actressId"],
             "cast": drama.get("cast", []),
         })

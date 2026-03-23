@@ -33,6 +33,7 @@ export default function Compare() {
           className="compare-avatar"
           src={actress.image || fallback(actress.name)}
           alt={actress.name}
+          loading="lazy"
           referrerPolicy="no-referrer"
           onError={(e) => { (e.target as HTMLImageElement).src = fallback(actress.name); }}
           onClick={() => navigate(`/actress/${actress._id}`)}

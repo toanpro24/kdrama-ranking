@@ -12,6 +12,14 @@ import Timeline from './Timeline'
 import Recommendations from './Recommendations'
 import StatsPage from './StatsPage'
 import Watchlist from './Watchlist'
+import NotFound from './NotFound'
+
+// Register service worker for PWA
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -28,6 +36,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/compare" element={<Compare />} />
           <Route path="/timeline" element={<Timeline />} />
           <Route path="/recommendations" element={<Recommendations />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </ActressProvider>
       </AuthProvider>

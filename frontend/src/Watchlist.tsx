@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { WatchStatus } from "./types";
-import { fetchWatchlist, updateWatchStatus } from "./api";
+import { fetchWatchlist, updateWatchStatus, rateDrama } from "./api";
 import type { WatchlistItem } from "./api";
 import { useAuth } from "./AuthContext";
 import "./index.css";
@@ -27,6 +27,7 @@ export default function Watchlist() {
   const [items, setItems] = useState<WatchlistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     if (!user) {
@@ -39,9 +40,17 @@ export default function Watchlist() {
   }, [user]);
 
   const filtered = useMemo(() => {
-    if (filter === "all") return items;
-    return items.filter((i) => i.watchStatus === filter);
-  }, [items, filter]);
+    let list = items;
+    if (filter !== "all") list = list.filter((i) => i.watchStatus === filter);
+    if (search) {
+      const q = search.toLowerCase();
+      list = list.filter((i) =>
+        i.title.toLowerCase().includes(q) ||
+        i.cast.some((c) => c.actressName.toLowerCase().includes(q))
+      );
+    }
+    return list;
+  }, [items, filter, search]);
 
   const counts = useMemo(() => {
     const c: Record<string, number> = { all: items.length };
@@ -63,6 +72,17 @@ export default function Watchlist() {
     updateWatchStatus(item.actressId, item.title, newStatus);
   }
 
+  async function handleRating(item: WatchlistItem, star: number) {
+    if (!user) return;
+    const newRating = star === item.rating ? null : star;
+    const ok = await rateDrama(item.actressId, item.title, newRating);
+    if (ok) {
+      setItems((prev) =>
+        prev.map((i) => i.title === item.title ? { ...i, rating: newRating } : i)
+      );
+    }
+  }
+
   if (loading) return <div className="loading-page"><div className="loading-spinner" /><span className="loading-text">Loading watchlist...</span></div>;
 
   if (!user) {
@@ -82,6 +102,11 @@ export default function Watchlist() {
       <button className="detail-back" onClick={() => navigate(-1)}>&#x2190; Back</button>
       <h1 className="recs-title">My Watch List</h1>
       <p className="recs-subtitle">Track what you're watching, planning, and have finished</p>
+
+      <div className="watchlist-search-wrap">
+        <span className="search-icon">⌕</span>
+        <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search dramas or actresses..." className="search-input" aria-label="Search watchlist" />
+      </div>
 
       <div className="recs-filters">
         {STATUS_TABS.map((t) => (
@@ -107,6 +132,7 @@ export default function Watchlist() {
                 className="recs-poster"
                 src={item.poster}
                 alt={item.title}
+                loading="lazy"
                 referrerPolicy="no-referrer"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
@@ -124,6 +150,18 @@ export default function Watchlist() {
               <span className={`watchlist-status-badge ws-badge-${item.watchStatus}`}>
                 {STATUS_LABELS[item.watchStatus] || item.watchStatus}
               </span>
+              <div className="drama-rating watchlist-rating" onClick={(e) => e.stopPropagation()}>
+                {[...Array(10)].map((_, s) => (
+                  <span
+                    key={s}
+                    className={`rating-star ${(item.rating || 0) > s ? "filled" : ""}`}
+                    onClick={() => handleRating(item, s + 1)}
+                  >
+                    ★
+                  </span>
+                ))}
+                {item.rating && <span className="rating-value">{item.rating}/10</span>}
+              </div>
               <div className="watch-status-row watchlist-actions" onClick={(e) => e.stopPropagation()}>
                 {(["watched", "watching", "plan_to_watch", "dropped"] as WatchStatus[]).map((ws) => (
                   <button

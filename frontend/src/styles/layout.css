@@ -158,6 +158,20 @@ select.add-input option { background: #161622; color: #fff; }
 }
 .unranked-grid { display: flex; flex-wrap: wrap; gap: 10px; padding: 20px; min-height: 64px; }
 .empty-hint { color: #333; font-size: 13px; font-style: italic; padding: 4px 8px; letter-spacing: 0.3px; }
+.empty-state-box {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 8px; padding: 40px 20px; width: 100%; text-align: center;
+}
+.empty-state-icon { font-size: 32px; opacity: 0.5; }
+.empty-state-title { font-size: 16px; font-weight: 700; color: #666; }
+.empty-state-text { font-size: 13px; color: #444; max-width: 360px; line-height: 1.5; }
+.show-more-wrap { display: flex; justify-content: center; padding: 16px 20px 24px; }
+.show-more-btn {
+  padding: 10px 32px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03); color: #aaa; font-size: 13px; font-weight: 600;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s;
+}
+.show-more-btn:hover { background: rgba(255,255,255,0.06); color: #fff; border-color: rgba(255,255,255,0.15); }
 
 /* ── Footer ── */
 .footer-section {

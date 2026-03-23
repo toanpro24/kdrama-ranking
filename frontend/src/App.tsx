@@ -26,7 +26,9 @@ export default function App() {
   const [tiersVisible, setTiersVisible] = useState(false);
   const [dragOverTier, setDragOverTier] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState<"default" | "name" | "year" | "genre">("default");
+  const [showCount, setShowCount] = useState(24);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
   const [searchResults, setSearchResults] = useState<ActressSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [addingFromTMDB, setAddingFromTMDB] = useState(false);
@@ -126,6 +128,11 @@ export default function App() {
     return filtered;
   }, [unranked, search, genreFilter, sortBy]);
 
+  const visibleUnranked = useMemo(() => filteredUnranked.slice(0, showCount), [filteredUnranked, showCount]);
+
+  // Reset pagination when filters change
+  useEffect(() => { setShowCount(24); }, [search, genreFilter, sortBy]);
+
   const computedStats = useMemo(() => {
     const ranked = actresses.filter((a) => a.tier).length;
     const total = actresses.length;
@@ -223,10 +230,17 @@ export default function App() {
     setShowAdd(false);
   }, [newName, newKnown, newGenre]);
 
-  const handleRemove = useCallback(async (id: string) => {
-    removeActress(id);
-    await deleteActress(id);
-  }, [removeActress]);
+  const handleRemoveRequest = useCallback((id: string) => {
+    const actress = actresses.find((a) => a._id === id);
+    setDeleteConfirm({ id, name: actress?.name || "this actress" });
+  }, [actresses]);
+
+  const handleRemoveConfirm = useCallback(async () => {
+    if (!deleteConfirm) return;
+    removeActress(deleteConfirm.id);
+    await deleteActress(deleteConfirm.id);
+    setDeleteConfirm(null);
+  }, [deleteConfirm, removeActress]);
 
   const handleReset = useCallback(async () => {
     await resetData();
@@ -250,6 +264,16 @@ export default function App() {
         pixelRatio: 2,
         cacheBust: true,
       });
+      // Use Web Share API if available, otherwise download
+      if (navigator.share && navigator.canShare) {
+        const res = await fetch(dataUrl);
+        const blob = await res.blob();
+        const file = new File([blob], "my-kdrama-tier-list.png", { type: "image/png" });
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({ title: "My K-Drama Tier List", files: [file] });
+          return;
+        }
+      }
       const link = document.createElement("a");
       link.download = "my-kdrama-tier-list.png";
       link.href = dataUrl;
@@ -368,6 +392,20 @@ export default function App() {
         </div>
       )}
 
+      {/* Delete Confirmation */}
+      {deleteConfirm && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" onClick={() => setDeleteConfirm(null)}>
+          <div className="modal-box" onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal-title" id="delete-modal-title">Remove Actress?</h3>
+            <p className="modal-text">Are you sure you want to remove <strong>{deleteConfirm.name}</strong>? This will remove her from all tiers and delete her data.</p>
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => setDeleteConfirm(null)}>Cancel</button>
+              <button className="modal-btn danger" onClick={handleRemoveConfirm}>Yes, Remove</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Add Form */}
       {showAdd && (
         <div className="add-panel">
@@ -445,10 +483,10 @@ export default function App() {
                 </div>
                 <div className="tier-content">
                   {tierActresses[tier.id]?.map((a) => (
-                    <ActressCard key={a._id} actress={a} color={tier.color} canEdit={!!user} onRemove={handleRemove} onDragStart={handleDragStart} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} />
+                    <ActressCard key={a._id} actress={a} color={tier.color} canEdit={!!user} onRemove={handleRemoveRequest} onDragStart={handleDragStart} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} />
                   ))}
                   {(!tierActresses[tier.id] || tierActresses[tier.id].length === 0) && (
-                    <div className="empty-hint">Drag actresses here</div>
+                    <div className="empty-hint">{user ? "Drag actresses here" : "Sign in to rank"}</div>
                   )}
                 </div>
               </div>
@@ -489,13 +527,36 @@ export default function App() {
               </div>
             </div>
             <div className="unranked-grid">
-              {filteredUnranked.map((a) => (
-                <ActressCard key={a._id} actress={a} color="#555" canEdit={!!user} onRemove={handleRemove} onDragStart={handleDragStart} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} />
+              {visibleUnranked.map((a) => (
+                <ActressCard key={a._id} actress={a} color="#555" canEdit={!!user} onRemove={handleRemoveRequest} onDragStart={handleDragStart} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} />
               ))}
               {filteredUnranked.length === 0 && (
-                <div className="empty-hint">{unranked.length === 0 ? "All ranked! Add more above." : "No matches found."}</div>
+                <div className="empty-state-box">
+                  {actresses.length === 0 ? (
+                    <>
+                      <span className="empty-state-icon">✦</span>
+                      <span className="empty-state-title">No actresses yet</span>
+                      <span className="empty-state-text">{user ? "Click \"+ Add Actress\" above to search and add your favorites" : "Sign in to start building your tier list"}</span>
+                    </>
+                  ) : unranked.length === 0 ? (
+                    <>
+                      <span className="empty-state-icon">🎉</span>
+                      <span className="empty-state-title">All ranked!</span>
+                      <span className="empty-state-text">Every actress has been placed in a tier. Add more with the button above.</span>
+                    </>
+                  ) : (
+                    <span className="empty-hint">No matches found.</span>
+                  )}
+                </div>
               )}
             </div>
+            {showCount < filteredUnranked.length && (
+              <div className="show-more-wrap">
+                <button className="show-more-btn" onClick={() => setShowCount((c) => c + 24)}>
+                  Show More ({filteredUnranked.length - showCount} remaining)
+                </button>
+              </div>
+            )}
           </section>
         </main>
 

@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import type { WatchStatus } from "./types";
-import { fetchDrama, updateWatchStatus } from "./api";
+import { fetchDrama, updateWatchStatus, rateDrama } from "./api";
 import { useAuth } from "./AuthContext";
+import { toast } from "./toast";
 import { useActresses } from "./ActressContext";
 import "./index.css";
 
@@ -24,6 +25,7 @@ interface DramaInfo {
   genre: string | null;
   synopsis: string | null;
   watchStatus: WatchStatus;
+  rating: number | null;
   actressId: string | null;
 }
 
@@ -58,7 +60,22 @@ export default function DramaDetail() {
         </div>
       )}
 
-      <button className="detail-back" onClick={() => navigate(-1)}>&#x2190; Back</button>
+      <div className="detail-top-bar">
+        <button className="detail-back" onClick={() => navigate(-1)}>&#x2190; Back</button>
+        <button
+          className="detail-share-btn"
+          onClick={() => {
+            if (navigator.share) {
+              navigator.share({ title: drama?.title || "Drama", url: window.location.href });
+            } else {
+              navigator.clipboard.writeText(window.location.href);
+              toast.success("Link copied!");
+            }
+          }}
+        >
+          Share
+        </button>
+      </div>
 
       {/* Hero Section */}
       <div className="detail-hero drama-hero">
@@ -82,6 +99,25 @@ export default function DramaDetail() {
               {drama.runtime && <span className="drama-meta-pill runtime-pill">{drama.runtime} min/ep</span>}
             </div>
             {drama.genre && <p className="drama-genre-line">{drama.genre}</p>}
+            <div className="drama-rating drama-detail-rating" role="group" aria-label={`Rate ${drama.title}`}>
+              {[...Array(10)].map((_, s) => (
+                <span
+                  key={s}
+                  className={`rating-star ${(drama.rating || 0) > s ? "filled" : ""} ${!user ? "disabled" : ""}`}
+                  onClick={async () => {
+                    if (!user || !drama.actressId) return;
+                    const newRating = s + 1 === drama.rating ? null : s + 1;
+                    const ok = await rateDrama(drama.actressId, drama.title, newRating);
+                    if (!ok) return;
+                    setDrama((prev) => prev ? { ...prev, rating: newRating } : prev);
+                    updateDrama(drama.actressId!, drama.title, "rating", newRating);
+                  }}
+                >
+                  ★
+                </span>
+              ))}
+              {drama.rating && <span className="rating-value">{drama.rating}/10</span>}
+            </div>
             <div className="watch-status-row drama-watch-status" role="group" aria-label="Watch status">
               {(["watched", "watching", "plan_to_watch", "dropped"] as WatchStatus[]).map((ws) => (
                 <button
@@ -170,6 +206,7 @@ export default function DramaDetail() {
                     className="drama-cast-avatar"
                     src={member.actressImage || fallbackAvatar}
                     alt={member.actressName}
+                    loading="lazy"
                     onError={(e) => { (e.target as HTMLImageElement).src = fallbackAvatar; }}
                   />
                   <div className="drama-cast-info">

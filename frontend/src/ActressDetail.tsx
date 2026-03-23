@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import type { Actress, WatchStatus } from "./types";
 import { fetchActress, rateDrama, updateWatchStatus } from "./api";
 import { TIER_MAP } from "./constants";
+import { toast } from "./toast";
 import { useAuth } from "./AuthContext";
 import { useActresses } from "./ActressContext";
 import "./index.css";
@@ -57,7 +58,22 @@ export default function ActressDetail() {
         </div>
       )}
 
-      <button className="detail-back" onClick={() => navigate(-1)}>← Back to Tier List</button>
+      <div className="detail-top-bar">
+        <button className="detail-back" onClick={() => navigate(-1)}>← Back to Tier List</button>
+        <button
+          className="detail-share-btn"
+          onClick={() => {
+            if (navigator.share) {
+              navigator.share({ title: actress?.name || "Actress Profile", url: window.location.href });
+            } else {
+              navigator.clipboard.writeText(window.location.href);
+              toast.success("Link copied!");
+            }
+          }}
+        >
+          Share
+        </button>
+      </div>
 
       {/* Hero Section */}
       <div className="detail-hero">
@@ -139,6 +155,7 @@ export default function ActressDetail() {
                 className="detail-gallery-img"
                 src={img}
                 alt={`${actress.name} photo ${i + 1}`}
+                loading="lazy"
                 referrerPolicy="no-referrer"
                 onClick={() => setLightbox(img)}
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
@@ -162,6 +179,7 @@ export default function ActressDetail() {
                     className="detail-drama-poster"
                     src={drama.poster}
                     alt={drama.title}
+                    loading="lazy"
                     referrerPolicy="no-referrer"
                     onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                   />

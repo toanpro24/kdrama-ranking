@@ -88,6 +88,7 @@ export default function Timeline() {
                       className="timeline-poster"
                       src={drama.poster}
                       alt={drama.title}
+                      loading="lazy"
                       referrerPolicy="no-referrer"
                       onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
                     />

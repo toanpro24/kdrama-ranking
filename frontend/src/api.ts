@@ -150,6 +150,7 @@ export interface WatchlistItem {
   year: number;
   poster: string | null;
   watchStatus: string;
+  rating: number | null;
   actressId: string;
   cast: { actressId: string; actressName: string; role: string }[];
 }
