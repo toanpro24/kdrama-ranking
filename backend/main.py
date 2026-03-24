@@ -7,7 +7,6 @@ from contextlib import asynccontextmanager
 
 import anthropic
 import httpx
-import sentry_sdk
 from bson import ObjectId
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, Header, HTTPException, Request
@@ -25,15 +24,6 @@ from models import ActressCreate, TierUpdate
 from seed import seed
 
 load_dotenv()
-
-# Sentry error monitoring
-_sentry_dsn = os.getenv("SENTRY_DSN")
-if _sentry_dsn:
-    sentry_sdk.init(
-        dsn=_sentry_dsn,
-        traces_sample_rate=0.2,
-        environment=os.getenv("ENVIRONMENT", "production"),
-    )
 ADMIN_API_KEY = os.getenv("ADMIN_API_KEY", "")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
 ALLOWED_ORIGINS = [o.strip() for o in os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",") if o.strip()]

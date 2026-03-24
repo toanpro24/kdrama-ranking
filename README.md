@@ -51,7 +51,6 @@ A full-stack web app for ranking Korean drama actresses into tiers, tracking you
 | AI | Anthropic Claude API |
 | External Data | TMDB API |
 | Image CDN | Cloudinary |
-| Monitoring | Sentry (frontend + backend) |
 | CI/CD | GitHub Actions |
 | Testing | Vitest + RTL + MSW (frontend), pytest + respx (backend) |
 | Deployment | Vercel (frontend), Railway (backend), MongoDB Atlas |
@@ -154,7 +153,6 @@ npm run dev
 | `ADMIN_API_KEY` | Yes | Secret key for admin endpoints |
 | `ALLOWED_ORIGINS` | No | Comma-separated CORS origins (defaults to localhost) |
 | `ANTHROPIC_API_KEY` | No | Claude API key for AI recommendations |
-| `SENTRY_DSN` | No | Sentry DSN for backend error monitoring |
 | `CLOUDINARY_CLOUD_NAME` | No | Cloudinary cloud name for gallery photos |
 | `CLOUDINARY_API_KEY` | No | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | No | Cloudinary API secret |
@@ -164,7 +162,6 @@ npm run dev
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `VITE_API_URL` | Yes | Backend API base URL (e.g. `http://localhost:8000/api`) |
-| `VITE_SENTRY_DSN` | No | Sentry DSN for frontend error monitoring |
 
 ## Running Tests
 
@@ -231,7 +228,7 @@ Interactive API docs available at `/docs` when running locally.
 - Rate limiting on expensive operations (TMDB search, AI chat, data refresh)
 - TMDB API key never exposed to the client
 - In-memory TTL cache (10 min) to reduce external API calls
-- Sentry error monitoring in production (opt-in)
+
 
 ## License
 
