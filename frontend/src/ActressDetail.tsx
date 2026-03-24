@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import type { Actress, WatchStatus } from "./types";
-import { fetchActress, rateDrama, updateWatchStatus } from "./api";
+import { fetchActress, rateDrama, updateWatchStatus, BACKEND_ORIGIN } from "./api";
 import { TIER_MAP } from "./constants";
 import { toast } from "./toast";
 import { useAuth } from "./AuthContext";
@@ -153,11 +153,11 @@ export default function ActressDetail() {
               <img
                 key={i}
                 className="detail-gallery-img"
-                src={img}
+                src={img.startsWith("/static") ? `${BACKEND_ORIGIN}${img}` : img}
                 alt={`${actress.name} photo ${i + 1}`}
                 loading="lazy"
                 referrerPolicy="no-referrer"
-                onClick={() => setLightbox(img)}
+                onClick={() => setLightbox(img.startsWith("/static") ? `${BACKEND_ORIGIN}${img}` : img)}
                 onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
               />
             ))}

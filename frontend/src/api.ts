@@ -4,6 +4,9 @@ import { toast } from "./toast";
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 const ADMIN_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
 
+// Backend origin for static files (gallery photos)
+export const BACKEND_ORIGIN = BASE.replace(/\/api\/?$/, "");
+
 // Auth token getter — set by AuthContext on mount
 let _getToken: () => Promise<string | null> = async () => null;
 export function setTokenGetter(fn: () => Promise<string | null>) {
