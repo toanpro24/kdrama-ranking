@@ -12,6 +12,7 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@sentry/react": "^10.45.0",
     "firebase": "^12.11.0",
     "html-to-image": "^1.11.13",
     "react": "^19.2.4",

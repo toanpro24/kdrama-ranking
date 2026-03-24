@@ -1,6 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import * as Sentry from '@sentry/react'
 import { AuthProvider } from './AuthContext'
 import { ActressProvider } from './ActressContext'
 import ErrorBoundary from './ErrorBoundary'
@@ -13,6 +14,18 @@ import Recommendations from './Recommendations'
 import StatsPage from './StatsPage'
 import Watchlist from './Watchlist'
 import NotFound from './NotFound'
+
+// Sentry error monitoring
+const SENTRY_DSN = import.meta.env.VITE_SENTRY_DSN;
+if (SENTRY_DSN) {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    environment: import.meta.env.MODE,
+    tracesSampleRate: 0.2,
+    replaysSessionSampleRate: 0,
+    replaysOnErrorSampleRate: 1.0,
+  });
+}
 
 // Register service worker for PWA
 if ("serviceWorker" in navigator) {

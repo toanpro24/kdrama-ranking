@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0a0a1a"/>
+      <stop offset="100%" style="stop-color:#1a1a3e"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#FF2942"/>
+      <stop offset="100%" style="stop-color:#FF6B81"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect x="0" y="0" width="1200" height="4" fill="url(#accent)"/>
+  <!-- Tier labels -->
+  <text x="80" y="200" font-family="system-ui,sans-serif" font-size="42" font-weight="bold" fill="#FF2942">S+</text>
+  <text x="80" y="270" font-family="system-ui,sans-serif" font-size="42" font-weight="bold" fill="#FF6B35">S</text>
+  <text x="80" y="340" font-family="system-ui,sans-serif" font-size="42" font-weight="bold" fill="#FFD700">A</text>
+  <text x="80" y="410" font-family="system-ui,sans-serif" font-size="42" font-weight="bold" fill="#4ECDC4">B</text>
+  <text x="80" y="480" font-family="system-ui,sans-serif" font-size="42" font-weight="bold" fill="#45B7D1">C</text>
+  <!-- Tier bars -->
+  <rect x="140" y="170" width="500" height="40" rx="8" fill="#FF294233"/>
+  <rect x="140" y="240" width="400" height="40" rx="8" fill="#FF6B3533"/>
+  <rect x="140" y="310" width="350" height="40" rx="8" fill="#FFD70033"/>
+  <rect x="140" y="380" width="280" height="40" rx="8" fill="#4ECDC433"/>
+  <rect x="140" y="450" width="200" height="40" rx="8" fill="#45B7D133"/>
+  <!-- Title -->
+  <text x="750" y="260" font-family="system-ui,sans-serif" font-size="64" font-weight="bold" fill="white" text-anchor="middle">K-Drama</text>
+  <text x="750" y="340" font-family="system-ui,sans-serif" font-size="64" font-weight="bold" fill="url(#accent)" text-anchor="middle">Actress Ranking</text>
+  <text x="750" y="410" font-family="system-ui,sans-serif" font-size="24" fill="#999" text-anchor="middle">Tier List  &#x2022;  Watchlist  &#x2022;  AI Recommendations</text>
+  <!-- Bottom bar -->
+  <rect x="0" y="626" width="1200" height="4" fill="url(#accent)"/>
+</svg>

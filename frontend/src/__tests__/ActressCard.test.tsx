@@ -38,8 +38,8 @@ describe('ActressCard', () => {
 
   it('renders age from birthDate', () => {
     renderCard({}, { birthDate: '1990-04-24' })
-    const currentYear = new Date().getFullYear()
-    const expectedAge = currentYear - 1990
+    const parsed = new Date('1990-04-24')
+    const expectedAge = Math.floor((Date.now() - parsed.getTime()) / 31557600000)
     expect(screen.getByText(String(expectedAge))).toBeInTheDocument()
   })
 

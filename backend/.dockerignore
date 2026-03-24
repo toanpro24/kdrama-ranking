@@ -1,0 +1,7 @@
+__pycache__
+*.pyc
+.env
+tests/
+static/gallery/
+rescrape_all.py
+*.py[cod]

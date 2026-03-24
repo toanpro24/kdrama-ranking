@@ -15,6 +15,7 @@ A full-stack web app for ranking Korean drama actresses into tiers, tracking you
 ### Actress Profiles
 - Detailed profiles with bio, photo gallery, filmography, and awards
 - Auto-populated from TMDB (The Movie Database)
+- Gallery photos hosted on Cloudinary CDN for fast loading
 - Gallery size scales with tier placement
 - Filmography split into K-Dramas vs TV Shows
 
@@ -49,8 +50,12 @@ A full-stack web app for ranking Korean drama actresses into tiers, tracking you
 | Auth | Firebase Authentication |
 | AI | Anthropic Claude API |
 | External Data | TMDB API |
+| Image CDN | Cloudinary |
+| Monitoring | Sentry (frontend + backend) |
+| CI/CD | GitHub Actions |
 | Testing | Vitest + RTL + MSW (frontend), pytest + respx (backend) |
 | Deployment | Vercel (frontend), Railway (backend), MongoDB Atlas |
+| Containerization | Docker + Docker Compose |
 
 ## Project Structure
 
@@ -73,16 +78,21 @@ kdrama-ranking/
 │   │   ├── api.ts              # API client
 │   │   ├── styles/             # Modular CSS (10 files)
 │   │   └── __tests__/          # 70 frontend tests
+│   ├── Dockerfile              # Multi-stage build (Node + nginx)
 │   └── package.json
 ├── backend/
-│   ├── main.py                 # FastAPI app (all endpoints)
+│   ├── main.py                 # FastAPI app (25+ endpoints)
 │   ├── models.py               # Pydantic schemas
 │   ├── auth.py                 # Firebase token verification
 │   ├── database.py             # MongoDB connection
 │   ├── seed.py                 # Initial data seeding
 │   ├── drama_metadata.py       # Preloaded drama metadata
-│   └── tests/                  # 106 backend tests
-├── render.yaml                 # Render deployment config
+│   ├── rescrape_all.py         # Gallery photo scraper (Cloudinary)
+│   ├── tests/                  # 114 backend tests
+│   └── Dockerfile              # Python 3.12 slim
+├── .github/workflows/ci.yml    # CI pipeline (tests, lint, build)
+├── docker-compose.yml          # Local dev with MongoDB
+├── render.yaml                 # Railway deployment config
 ├── run.bat / run.sh            # One-command local launchers
 └── README.md
 ```
@@ -93,7 +103,15 @@ kdrama-ranking/
 
 - [Node.js](https://nodejs.org/) v18+
 - [Python](https://www.python.org/downloads/) 3.10+
-- [MongoDB](https://www.mongodb.com/try/download/community) running locally
+- [MongoDB](https://www.mongodb.com/try/download/community) running locally (or use Docker)
+
+### Quick Start (Docker)
+
+```bash
+docker compose up --build
+```
+
+This starts the backend (port 8000), frontend (port 3000), and a local MongoDB instance. Open `http://localhost:3000`.
 
 ### Quick Start (Windows)
 
@@ -136,22 +154,29 @@ npm run dev
 | `ADMIN_API_KEY` | Yes | Secret key for admin endpoints |
 | `ALLOWED_ORIGINS` | No | Comma-separated CORS origins (defaults to localhost) |
 | `ANTHROPIC_API_KEY` | No | Claude API key for AI recommendations |
+| `SENTRY_DSN` | No | Sentry DSN for backend error monitoring |
+| `CLOUDINARY_CLOUD_NAME` | No | Cloudinary cloud name for gallery photos |
+| `CLOUDINARY_API_KEY` | No | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | No | Cloudinary API secret |
 
 #### Frontend (`frontend/.env`)
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `VITE_API_URL` | Yes | Backend API base URL (e.g. `http://localhost:8000/api`) |
+| `VITE_SENTRY_DSN` | No | Sentry DSN for frontend error monitoring |
 
 ## Running Tests
 
 ```bash
 # Frontend (70 tests)
-cd frontend && npx vitest run
+cd frontend && npm test
 
-# Backend (106 tests)
+# Backend (114 tests)
 cd backend && python -m pytest tests/ -v
 ```
+
+Tests run automatically on every push via GitHub Actions CI.
 
 ## API Endpoints
 
@@ -163,8 +188,8 @@ cd backend && python -m pytest tests/ -v
 | PATCH | `/api/actresses/:id/tier` | Required | Update tier placement |
 | DELETE | `/api/actresses/:id` | Admin | Delete an actress |
 | GET | `/api/dramas/:title` | Optional | Get drama details with cast |
-| PATCH | `/api/actresses/:id/drama-status` | Required | Update watch status |
-| PATCH | `/api/actresses/:id/drama-rating` | Required | Rate a drama (1-10) |
+| PATCH | `/api/actresses/:id/dramas/:title/watch-status` | Required | Update watch status |
+| PATCH | `/api/actresses/:id/dramas/:title/rating` | Required | Rate a drama (1-10) |
 | GET | `/api/watchlist` | Required | Get user's watchlist |
 | GET | `/api/stats` | Optional | Tier and genre statistics |
 | GET | `/api/search-actress` | No | Search TMDB for actresses (rate limited) |
@@ -206,6 +231,7 @@ Interactive API docs available at `/docs` when running locally.
 - Rate limiting on expensive operations (TMDB search, AI chat, data refresh)
 - TMDB API key never exposed to the client
 - In-memory TTL cache (10 min) to reduce external API calls
+- Sentry error monitoring in production (opt-in)
 
 ## License
 
