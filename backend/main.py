@@ -325,7 +325,8 @@ def get_actresses(genre: str | None = None, search: str | None = None, user=Depe
             {"name": {"$regex": search, "$options": "i"}},
             {"known": {"$regex": search, "$options": "i"}},
         ]
-    docs = list(actresses_collection.find(query))
+    # Exclude gallery from list endpoint (base64 images are large)
+    docs = list(actresses_collection.find(query, {"gallery": 0}))
     for d in docs:
         d["_id"] = str(d["_id"])
     _merge_user_data(docs, user["uid"] if user else None)
