@@ -14,7 +14,9 @@ from pymongo import MongoClient
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8')
 
-MONGO_URI = "mongodb+srv://canhtoan0411_db_user:oonHHJmqe9Boivut@kdrama-actresses.fyyflro.mongodb.net/?appName=kdrama-actresses"
+from dotenv import load_dotenv
+load_dotenv()
+MONGO_URI = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
 GALLERY_DIR = Path(__file__).parent / "static" / "gallery"
 TARGET = 10
 MIN_FILE_SIZE = 15_000   # 15KB minimum
