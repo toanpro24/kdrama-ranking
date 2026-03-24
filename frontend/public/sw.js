@@ -19,6 +19,8 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
+  // Only handle http/https requests (skip chrome-extension, etc.)
+  if (!e.request.url.startsWith("http")) return;
   // Network-first for API calls, cache-first for assets
   if (e.request.url.includes("/api/")) return;
   e.respondWith(
