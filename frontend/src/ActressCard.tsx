@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import type { Actress } from "./types";
 import { TIER_MAP } from "./constants";
@@ -23,6 +23,12 @@ export default function ActressCard({ actress, color, canEdit, onRemove, onDragS
   const navigate = useNavigate();
   const fallbackImg = `https://ui-avatars.com/api/?name=${encodeURIComponent(actress.name)}&size=200&background=1a1a2e&color=fff&bold=true`;
   const tier = actress.tier ? TIER_MAP[actress.tier] : null;
+  const age = useMemo(() => {
+    if (!actress.birthDate) return null;
+    const parsed = new Date(actress.birthDate);
+    if (isNaN(parsed.getTime())) return null;
+    return Math.floor((Date.now() - parsed.getTime()) / 31557600000);
+  }, [actress.birthDate]);
 
   const handleMouseEnter = () => {
     clearTimeout(hideTimer.current);
@@ -82,12 +88,7 @@ export default function ActressCard({ actress, color, canEdit, onRemove, onDragS
           <span className="card-known">{actress.known}</span>
           <div className="card-meta-row">
             <span className="card-genre" style={{ borderColor: color + "44", color }}>{actress.genre}</span>
-            {actress.birthDate && (() => {
-              const parsed = new Date(actress.birthDate);
-              if (isNaN(parsed.getTime())) return null;
-              const age = Math.floor((Date.now() - parsed.getTime()) / 31557600000);
-              return <span className="card-age">{age}</span>;
-            })()}
+            {age !== null && <span className="card-age">{age}</span>}
             {actress.dramas?.length > 0 && (
               <span className="card-drama-count">{actress.dramas.filter((d) => d.category !== "show").length} dramas</span>
             )}
@@ -126,17 +127,12 @@ export default function ActressCard({ actress, color, canEdit, onRemove, onDragS
                 <span className="popup-value" style={{ color: tier.color, fontWeight: 700 }}>{tier.label}</span>
               </div>
             )}
-            {actress.birthDate && (() => {
-              const parsed = new Date(actress.birthDate);
-              if (isNaN(parsed.getTime())) return null;
-              const age = Math.floor((Date.now() - parsed.getTime()) / 31557600000);
-              return (
-                <div className="popup-detail-row">
-                  <span className="popup-label">Age</span>
-                  <span className="popup-value">{age}</span>
-                </div>
-              );
-            })()}
+            {age !== null && (
+              <div className="popup-detail-row">
+                <span className="popup-label">Age</span>
+                <span className="popup-value">{age}</span>
+              </div>
+            )}
             {actress.dramas?.length > 0 && (
               <div className="popup-detail-row popup-dramas">
                 <span className="popup-label">Dramas</span>
