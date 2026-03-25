@@ -30,3 +30,7 @@ user_actresses_collection.create_index("userId")
 user_profiles_collection = db["user_profiles"]
 user_profiles_collection.create_index("userId", unique=True)
 user_profiles_collection.create_index("shareSlug", unique=True, sparse=True)
+
+# Leaderboard cache (aggregated actress rankings across all public users)
+leaderboard_cache_collection = db["leaderboard_cache"]
+leaderboard_cache_collection.create_index("cachedAt", expireAfterSeconds=300)  # TTL: 5 minutes

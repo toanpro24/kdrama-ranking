@@ -18,7 +18,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from auth import get_current_user, require_user
-from database import actresses_collection, user_rankings_collection, user_drama_status_collection, user_actresses_collection, user_profiles_collection
+from database import actresses_collection, user_rankings_collection, user_drama_status_collection, user_actresses_collection, user_profiles_collection, leaderboard_cache_collection
 from drama_metadata import DRAMA_META
 from models import ActressCreate, TierUpdate, ProfileUpdate
 from seed import seed
@@ -959,6 +959,112 @@ def get_shared_tier_list(slug: str):
         "picture": profile.get("picture", ""),
         "actresses": docs,
     }
+
+
+# ── Leaderboard ──
+TIER_WEIGHT = {"splus": 6, "s": 5, "a": 4, "b": 3, "c": 2, "d": 1}
+
+
+def _build_leaderboard():
+    """Aggregate actress rankings across all public users into a leaderboard."""
+    from datetime import datetime, timezone
+
+    # Check cache first
+    cached = leaderboard_cache_collection.find_one(sort=[("cachedAt", -1)])
+    if cached:
+        return cached["entries"]
+
+    # Get public user IDs
+    public_uids = [
+        p["userId"] for p in user_profiles_collection.find(
+            {"tierListVisibility": "public"}, {"userId": 1}
+        )
+    ]
+    if not public_uids:
+        return []
+
+    # Get all rankings from public users
+    rankings = list(user_rankings_collection.find({"userId": {"$in": public_uids}}))
+
+    # Aggregate per actress
+    actress_stats: dict = {}
+    for r in rankings:
+        aid = r["actressId"]
+        tier = r.get("tier")
+        if not tier or tier not in TIER_WEIGHT:
+            continue
+        if aid not in actress_stats:
+            actress_stats[aid] = {"totalLists": 0, "tierSum": 0, "tierCounts": {}, "topTierCount": 0}
+        stats = actress_stats[aid]
+        stats["totalLists"] += 1
+        stats["tierSum"] += TIER_WEIGHT[tier]
+        stats["tierCounts"][tier] = stats["tierCounts"].get(tier, 0) + 1
+        if tier in ("splus", "s", "a"):
+            stats["topTierCount"] += 1
+
+    if not actress_stats:
+        return []
+
+    # Fetch actress info
+    actress_ids = list(actress_stats.keys())
+    actress_docs = {
+        str(d["_id"]): d
+        for d in actresses_collection.find({"_id": {"$in": [_oid(a) for a in actress_ids]}}, {"gallery": 0})
+    }
+
+    # Build leaderboard entries
+    entries = []
+    for aid, stats in actress_stats.items():
+        doc = actress_docs.get(aid)
+        if not doc:
+            continue
+        avg_score = stats["tierSum"] / stats["totalLists"] if stats["totalLists"] > 0 else 0
+        entries.append({
+            "actressId": aid,
+            "name": doc.get("name", ""),
+            "image": doc.get("image"),
+            "known": doc.get("known", ""),
+            "genre": doc.get("genre", ""),
+            "totalLists": stats["totalLists"],
+            "avgScore": round(avg_score, 2),
+            "topTierCount": stats["topTierCount"],
+            "tierCounts": stats["tierCounts"],
+        })
+
+    entries.sort(key=lambda e: (-e["avgScore"], -e["totalLists"]))
+    for i, e in enumerate(entries):
+        e["rank"] = i + 1
+
+    # Cache results
+    leaderboard_cache_collection.insert_one({
+        "entries": entries,
+        "cachedAt": datetime.now(timezone.utc),
+    })
+
+    return entries
+
+
+@app.get("/api/leaderboard")
+def get_leaderboard(sort: str = "score", genre: str | None = None):
+    """Get the global actress leaderboard."""
+    entries = _build_leaderboard()
+
+    if genre and genre != "All":
+        entries = [e for e in entries if e["genre"] == genre]
+
+    if sort == "lists":
+        entries = sorted(entries, key=lambda e: (-e["totalLists"], -e["avgScore"]))
+    elif sort == "top":
+        entries = sorted(entries, key=lambda e: (-e["topTierCount"], -e["avgScore"]))
+    # default: by avgScore (already sorted)
+
+    # Re-rank after filtering
+    for i, e in enumerate(entries):
+        e["rank"] = i + 1
+
+    return {"entries": entries, "totalUsers": len(set(
+        p["userId"] for p in user_profiles_collection.find({"tierListVisibility": "public"}, {"userId": 1})
+    ))}
 
 
 async def _find_tmdb_person(name: str, known_drama: str | None = None) -> int | None:

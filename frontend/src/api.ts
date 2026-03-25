@@ -1,4 +1,4 @@
-import type { Actress, Stats, ChatMessage, UserProfile, SharedTierListData } from "./types";
+import type { Actress, Stats, ChatMessage, UserProfile, SharedTierListData, LeaderboardData } from "./types";
 import { toast } from "./toast";
 
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
@@ -212,6 +212,16 @@ export async function fetchSharedTierList(slug: string): Promise<SharedTierListD
     return await request<SharedTierListData>(`${BASE}/shared/${slug}`);
   } catch {
     return null;
+  }
+}
+
+export async function fetchLeaderboard(sort = "score", genre?: string): Promise<LeaderboardData> {
+  const params = new URLSearchParams({ sort });
+  if (genre && genre !== "All") params.set("genre", genre);
+  try {
+    return await request<LeaderboardData>(`${BASE}/leaderboard?${params}`);
+  } catch {
+    return { entries: [], totalUsers: 0 };
   }
 }
 

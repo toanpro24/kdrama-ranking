@@ -61,3 +61,21 @@ export interface SharedTierListData {
   picture: string;
   actresses: Actress[];
 }
+
+export interface LeaderboardEntry {
+  rank: number;
+  actressId: string;
+  name: string;
+  image: string | null;
+  known: string;
+  genre: string;
+  totalLists: number;
+  avgScore: number;
+  topTierCount: number;
+  tierCounts: Record<string, number>;
+}
+
+export interface LeaderboardData {
+  entries: LeaderboardEntry[];
+  totalUsers: number;
+}
