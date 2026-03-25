@@ -20,10 +20,20 @@ const mockLeaderboardData = {
   totalUsers: 6,
 }
 
+const mockTrendingData = {
+  entries: [
+    { rank: 1, actressId: 'a1', name: 'Kim Tae-ri', image: null, known: 'Twenty-Five Twenty-One', genre: 'Romance', userCount: 5, avgScore: 8.4, topTierCount: 4, trendScore: 42.0 },
+    { rank: 2, actressId: 'a2', name: 'Park Eun-bin', image: null, known: 'Extraordinary Attorney Woo', genre: 'Drama', userCount: 3, avgScore: 7.2, topTierCount: 2, trendScore: 21.6 },
+  ],
+  totalUsers: 6,
+}
+
 const mockFetchLeaderboard = vi.fn().mockResolvedValue(mockLeaderboardData)
+const mockFetchTrending = vi.fn().mockResolvedValue(mockTrendingData)
 
 vi.mock('../api', () => ({
   fetchLeaderboard: (...args: any[]) => mockFetchLeaderboard(...args),
+  fetchTrending: (...args: any[]) => mockFetchTrending(...args),
   setTokenGetter: vi.fn(),
 }))
 
@@ -52,6 +62,7 @@ describe('Leaderboard', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     mockFetchLeaderboard.mockResolvedValue(mockLeaderboardData)
+    mockFetchTrending.mockResolvedValue(mockTrendingData)
   })
 
   it('renders the leaderboard title', async () => {
@@ -180,5 +191,42 @@ describe('Leaderboard', () => {
   it('renders back button', () => {
     renderLeaderboard()
     expect(screen.getByText('← Back to Tier List')).toBeInTheDocument()
+  })
+
+  it('renders tab buttons for Rankings and Trending', async () => {
+    renderLeaderboard()
+    expect(screen.getByText('Rankings')).toBeInTheDocument()
+    expect(screen.getByText('Trending')).toBeInTheDocument()
+  })
+
+  it('switches to trending tab and shows trending entries', async () => {
+    renderLeaderboard()
+    await waitFor(() => screen.getByText('Kim Tae-ri'))
+    fireEvent.click(screen.getByText('Trending'))
+    await waitFor(() => {
+      expect(mockFetchTrending).toHaveBeenCalled()
+    })
+    await waitFor(() => {
+      expect(screen.getByText('42')).toBeInTheDocument()
+    })
+  })
+
+  it('hides sort/genre controls on trending tab', async () => {
+    renderLeaderboard()
+    await waitFor(() => screen.getByText('Kim Tae-ri'))
+    fireEvent.click(screen.getByText('Trending'))
+    await waitFor(() => {
+      expect(screen.queryByText('Sort by:')).not.toBeInTheDocument()
+    })
+  })
+
+  it('shows empty state for trending when no entries', async () => {
+    mockFetchTrending.mockResolvedValue({ entries: [], totalUsers: 0 })
+    renderLeaderboard()
+    await waitFor(() => screen.getByText('Kim Tae-ri'))
+    fireEvent.click(screen.getByText('Trending'))
+    await waitFor(() => {
+      expect(screen.getByText('No trending data yet')).toBeInTheDocument()
+    })
   })
 })

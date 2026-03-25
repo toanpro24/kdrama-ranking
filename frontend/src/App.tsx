@@ -381,6 +381,7 @@ export default function App() {
           <button onClick={() => navigate("/recommendations")} className="nav-tab" role="tab" aria-selected="false">💡 For You</button>
           <button onClick={() => navigate("/watchlist")} className="nav-tab" role="tab" aria-selected="false">📺 Watch List</button>
           <button onClick={() => navigate("/leaderboard")} className="nav-tab" role="tab" aria-selected="false">🏆 Leaderboard</button>
+          {user && <button onClick={() => navigate("/following")} className="nav-tab" role="tab" aria-selected="false">👥 Following</button>}
         </div>
         <div className="nav-actions">
           <button onClick={handleShareTierList} className="nav-btn share-btn" disabled={shareCapturing}>{shareCapturing ? "Capturing..." : "📷 Share Tier List"}</button>

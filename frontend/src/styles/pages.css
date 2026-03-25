@@ -535,3 +535,91 @@
   color: #fff; min-width: 32px; text-align: center;
 }
 .cl-tier-pill.cl-unranked { background: rgba(255,255,255,0.06); color: #555; }
+
+/* ── Following Page ── */
+.fw-title { font-family: 'Playfair Display', serif; font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+.fw-counts { display: flex; gap: 24px; margin-bottom: 24px; }
+.fw-count-item { display: flex; flex-direction: column; align-items: center; }
+.fw-count-num { font-size: 22px; font-weight: 700; color: #fff; }
+.fw-count-label { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; }
+.fw-empty { text-align: center; padding: 48px 0; color: #888; }
+.fw-empty-hint { margin-top: 8px; font-size: 13px; }
+.fw-link { color: #E500A4; cursor: pointer; }
+.fw-link:hover { text-decoration: underline; }
+.fw-list { display: flex; flex-direction: column; gap: 10px; }
+.fw-card {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  background: rgba(255,255,255,0.02); border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.04); padding: 14px 16px;
+  transition: background 0.15s;
+}
+.fw-card:hover { background: rgba(255,255,255,0.04); }
+.fw-card-main { display: flex; align-items: center; gap: 12px; cursor: pointer; flex: 1; min-width: 0; }
+.fw-avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+.fw-avatar-placeholder {
+  width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,0.06);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700; color: #555; flex-shrink: 0;
+}
+.fw-info { display: flex; flex-direction: column; min-width: 0; }
+.fw-name { font-size: 14px; font-weight: 600; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fw-bio { font-size: 12px; color: #777; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.fw-meta { font-size: 11px; color: #555; margin-top: 2px; }
+.fw-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.fw-compare-btn {
+  background: rgba(255,255,255,0.06); color: #aaa; border: none; border-radius: 8px;
+  padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.fw-compare-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.fw-unfollow-btn {
+  background: rgba(229,0,164,0.1); color: #E500A4; border: 1px solid rgba(229,0,164,0.2);
+  border-radius: 8px; padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: all 0.15s;
+}
+.fw-unfollow-btn:hover { background: rgba(229,0,164,0.2); }
+
+/* ── Follow Button (shared pages) ── */
+.follow-btn {
+  background: #E500A4; color: #fff; border: none; border-radius: 10px;
+  padding: 8px 20px; font-size: 13px; font-weight: 700; cursor: pointer;
+  transition: all 0.15s; white-space: nowrap; margin-left: auto; flex-shrink: 0;
+}
+.follow-btn:hover { background: #c4008d; }
+.follow-btn.following {
+  background: transparent; border: 1px solid rgba(229,0,164,0.3); color: #E500A4;
+}
+.follow-btn.following:hover { background: rgba(229,0,164,0.1); }
+
+/* ── Leaderboard Tabs ── */
+.lb-tabs { display: flex; gap: 4px; margin-bottom: 16px; }
+.lb-tab {
+  background: rgba(255,255,255,0.04); color: #888; border: none; border-radius: 10px;
+  padding: 8px 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s;
+}
+.lb-tab:hover { background: rgba(255,255,255,0.08); color: #ccc; }
+.lb-tab.active { background: #E500A4; color: #fff; }
+
+/* ── Trending Cards ── */
+.lb-trending { display: flex; flex-direction: column; gap: 8px; }
+.lb-trending-card {
+  display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+  background: rgba(255,255,255,0.02); border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.04); cursor: pointer; transition: background 0.15s;
+}
+.lb-trending-card:hover { background: rgba(255,255,255,0.04); }
+.lb-trending-rank { font-size: 15px; font-weight: 800; color: #555; min-width: 32px; text-align: center; }
+.lb-trending-card:nth-child(1) .lb-trending-rank { color: #FFD700; }
+.lb-trending-card:nth-child(2) .lb-trending-rank { color: #C0C0C0; }
+.lb-trending-card:nth-child(3) .lb-trending-rank { color: #CD7F32; }
+.lb-trending-img { width: 48px; height: 48px; border-radius: 12px; object-fit: cover; flex-shrink: 0; }
+.lb-trending-placeholder {
+  width: 48px; height: 48px; border-radius: 12px; background: rgba(255,255,255,0.06);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; font-weight: 700; color: #444; flex-shrink: 0;
+}
+.lb-trending-info { flex: 1; min-width: 0; }
+.lb-trending-name { font-size: 14px; font-weight: 600; color: #ddd; display: block; }
+.lb-trending-known { font-size: 12px; color: #777; display: block; margin-top: 2px; }
+.lb-trending-stats { display: flex; flex-direction: column; align-items: flex-end; flex-shrink: 0; }
+.lb-trending-score { font-size: 18px; font-weight: 800; color: #E500A4; }
+.lb-trending-meta { font-size: 11px; color: #666; margin-top: 2px; }

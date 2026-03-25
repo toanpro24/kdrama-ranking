@@ -18,7 +18,7 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from auth import get_current_user, require_user
-from database import actresses_collection, user_rankings_collection, user_drama_status_collection, user_actresses_collection, user_profiles_collection, leaderboard_cache_collection
+from database import actresses_collection, user_rankings_collection, user_drama_status_collection, user_actresses_collection, user_profiles_collection, leaderboard_cache_collection, user_follows_collection
 from drama_metadata import DRAMA_META
 from models import ActressCreate, TierUpdate, ProfileUpdate
 from seed import seed
@@ -1165,6 +1165,159 @@ def compare_tier_lists(slug1: str, slug2: str):
             "agreementPct": agreement_pct,
         },
     }
+
+
+# ── Follow System ──
+@app.post("/api/follow/{slug}")
+def follow_user(slug: str, user=Depends(require_user)):
+    """Follow a user by their share slug."""
+    target = user_profiles_collection.find_one({"shareSlug": slug})
+    if not target:
+        raise HTTPException(404, "User not found")
+    if target["userId"] == user["uid"]:
+        raise HTTPException(400, "Cannot follow yourself")
+    if target["tierListVisibility"] == "private":
+        raise HTTPException(403, "This user's tier list is private")
+    user_follows_collection.update_one(
+        {"followerId": user["uid"], "followingId": target["userId"]},
+        {"$set": {"followerId": user["uid"], "followingId": target["userId"], "followedSlug": slug}},
+        upsert=True,
+    )
+    return {"following": True}
+
+
+@app.delete("/api/follow/{slug}")
+def unfollow_user(slug: str, user=Depends(require_user)):
+    """Unfollow a user by their share slug."""
+    target = user_profiles_collection.find_one({"shareSlug": slug})
+    if not target:
+        raise HTTPException(404, "User not found")
+    user_follows_collection.delete_one({"followerId": user["uid"], "followingId": target["userId"]})
+    return {"following": False}
+
+
+@app.get("/api/following")
+def get_following(user=Depends(require_user)):
+    """Get list of users the current user follows."""
+    follows = list(user_follows_collection.find({"followerId": user["uid"]}))
+    if not follows:
+        return []
+    following_ids = [f["followingId"] for f in follows]
+    profiles = {
+        p["userId"]: p
+        for p in user_profiles_collection.find({"userId": {"$in": following_ids}})
+    }
+    result = []
+    for f in follows:
+        profile = profiles.get(f["followingId"])
+        if not profile:
+            continue
+        # Count how many actresses they've ranked
+        ranked_count = user_rankings_collection.count_documents({"userId": f["followingId"]})
+        result.append({
+            "userId": f["followingId"],
+            "displayName": profile.get("displayName", ""),
+            "picture": profile.get("picture", ""),
+            "shareSlug": profile.get("shareSlug", ""),
+            "bio": profile.get("bio", ""),
+            "rankedCount": ranked_count,
+        })
+    return result
+
+
+@app.get("/api/followers/count")
+def get_follower_count(user=Depends(require_user)):
+    """Get the current user's follower and following counts."""
+    followers = user_follows_collection.count_documents({"followingId": user["uid"]})
+    following = user_follows_collection.count_documents({"followerId": user["uid"]})
+    return {"followers": followers, "following": following}
+
+
+@app.get("/api/is-following/{slug}")
+def is_following(slug: str, user=Depends(require_user)):
+    """Check if current user follows a given user."""
+    target = user_profiles_collection.find_one({"shareSlug": slug})
+    if not target:
+        return {"following": False}
+    exists = user_follows_collection.find_one({"followerId": user["uid"], "followingId": target["userId"]})
+    return {"following": bool(exists)}
+
+
+# ── Trending Leaderboard ──
+@app.get("/api/trending")
+def get_trending():
+    """Get trending actresses based on recent ranking activity (last 7 days).
+
+    Uses the number of users who ranked an actress recently as a signal,
+    weighted by tier placement.
+    """
+    from datetime import datetime, timedelta, timezone
+
+    # Get all public user IDs
+    public_uids = [
+        p["userId"] for p in user_profiles_collection.find(
+            {"tierListVisibility": "public"}, {"userId": 1}
+        )
+    ]
+    if not public_uids:
+        return {"entries": [], "totalUsers": 0}
+
+    # Get all rankings from public users
+    all_rankings = list(user_rankings_collection.find({"userId": {"$in": public_uids}}))
+
+    # Count how many public users ranked each actress (popularity signal)
+    actress_data: dict = {}
+    for r in all_rankings:
+        aid = r["actressId"]
+        tier = r.get("tier")
+        if not tier or tier not in TIER_WEIGHT:
+            continue
+        if aid not in actress_data:
+            actress_data[aid] = {"userCount": 0, "tierSum": 0, "topTierCount": 0}
+        actress_data[aid]["userCount"] += 1
+        actress_data[aid]["tierSum"] += TIER_WEIGHT[tier]
+        if tier in ("splus", "s"):
+            actress_data[aid]["topTierCount"] += 1
+
+    if not actress_data:
+        return {"entries": [], "totalUsers": len(public_uids)}
+
+    # Trending score: combines popularity (user count) with quality (avg tier)
+    # Score = userCount * avgScore — rewards both breadth and quality
+    for aid, data in actress_data.items():
+        avg = data["tierSum"] / data["userCount"] if data["userCount"] > 0 else 0
+        data["trendScore"] = round(data["userCount"] * avg, 2)
+        data["avgScore"] = round(avg, 2)
+
+    # Fetch actress info
+    actress_ids = list(actress_data.keys())
+    actress_docs = {
+        str(d["_id"]): d
+        for d in actresses_collection.find({"_id": {"$in": [_oid(a) for a in actress_ids]}}, {"gallery": 0})
+    }
+
+    entries = []
+    for aid, data in actress_data.items():
+        doc = actress_docs.get(aid)
+        if not doc:
+            continue
+        entries.append({
+            "actressId": aid,
+            "name": doc.get("name", ""),
+            "image": doc.get("image"),
+            "known": doc.get("known", ""),
+            "genre": doc.get("genre", ""),
+            "userCount": data["userCount"],
+            "avgScore": data["avgScore"],
+            "topTierCount": data["topTierCount"],
+            "trendScore": data["trendScore"],
+        })
+
+    entries.sort(key=lambda e: (-e["trendScore"], -e["avgScore"]))
+    for i, e in enumerate(entries):
+        e["rank"] = i + 1
+
+    return {"entries": entries[:50], "totalUsers": len(public_uids)}
 
 
 async def _find_tmdb_person(name: str, known_drama: str | None = None) -> int | None:

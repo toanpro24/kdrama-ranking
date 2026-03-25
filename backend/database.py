@@ -31,6 +31,12 @@ user_profiles_collection = db["user_profiles"]
 user_profiles_collection.create_index("userId", unique=True)
 user_profiles_collection.create_index("shareSlug", unique=True, sparse=True)
 
+# User follows (social follow system)
+user_follows_collection = db["user_follows"]
+user_follows_collection.create_index([("followerId", 1), ("followingId", 1)], unique=True)
+user_follows_collection.create_index("followerId")
+user_follows_collection.create_index("followingId")
+
 # Leaderboard cache (aggregated actress rankings across all public users)
 leaderboard_cache_collection = db["leaderboard_cache"]
 leaderboard_cache_collection.create_index("cachedAt", expireAfterSeconds=300)  # TTL: 5 minutes

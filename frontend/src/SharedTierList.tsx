@@ -1,19 +1,23 @@
 import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { fetchSharedTierList } from "./api";
+import { fetchSharedTierList, isFollowing, followUser, unfollowUser } from "./api";
 import type { SharedTierListData, Actress } from "./types";
 import { TIERS } from "./constants";
+import { useAuth } from "./AuthContext";
 import "./index.css";
 
 export default function SharedTierList() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [data, setData] = useState<SharedTierListData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [following, setFollowing] = useState(false);
 
   useEffect(() => {
     if (!slug) return;
+    if (user) isFollowing(slug).then(setFollowing);
     fetchSharedTierList(slug).then((d) => {
       if (d) {
         setData(d);
@@ -49,6 +53,17 @@ export default function SharedTierList() {
 
   const ranked = useMemo(() => data?.actresses.filter((a) => a.tier).length || 0, [data]);
 
+  const handleToggleFollow = async () => {
+    if (!slug) return;
+    if (following) {
+      const ok = await unfollowUser(slug);
+      if (ok) setFollowing(false);
+    } else {
+      const ok = await followUser(slug);
+      if (ok) setFollowing(true);
+    }
+  };
+
   if (loading) return <div className="loading">Loading tier list...</div>;
 
   if (error || !data) {
@@ -73,6 +88,11 @@ export default function SharedTierList() {
           {data.bio && <p className="shared-bio">{data.bio}</p>}
           <p className="shared-stats">{ranked} ranked out of {data.actresses.length} actresses</p>
         </div>
+        {user && (
+          <button className={`follow-btn ${following ? "following" : ""}`} onClick={handleToggleFollow}>
+            {following ? "Following" : "Follow"}
+          </button>
+        )}
       </div>
 
       <section className="tiers-section shared-tiers">

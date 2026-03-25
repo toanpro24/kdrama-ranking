@@ -1,4 +1,4 @@
-import type { Actress, Stats, ChatMessage, UserProfile, SharedTierListData, LeaderboardData, CommunityStats, CompareData } from "./types";
+import type { Actress, Stats, ChatMessage, UserProfile, SharedTierListData, LeaderboardData, CommunityStats, CompareData, FollowingUser, TrendingData } from "./types";
 import { toast } from "./toast";
 
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
@@ -230,6 +230,59 @@ export async function fetchCommunityStats(actressId: string): Promise<CommunityS
     return await request<CommunityStats>(`${BASE}/actresses/${actressId}/community`);
   } catch {
     return { totalLists: 0, avgScore: 0, tierCounts: {}, topTierCount: 0, rank: null };
+  }
+}
+
+export async function followUser(slug: string): Promise<boolean> {
+  try {
+    await request(`${BASE}/follow/${slug}`, { method: "POST" });
+    return true;
+  } catch (e: any) {
+    toast.error(e.message || "Failed to follow user");
+    return false;
+  }
+}
+
+export async function unfollowUser(slug: string): Promise<boolean> {
+  try {
+    await request(`${BASE}/follow/${slug}`, { method: "DELETE" });
+    return true;
+  } catch (e: any) {
+    toast.error(e.message || "Failed to unfollow user");
+    return false;
+  }
+}
+
+export async function fetchFollowing(): Promise<FollowingUser[]> {
+  try {
+    return await request<FollowingUser[]>(`${BASE}/following`);
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchFollowerCount(): Promise<{ followers: number; following: number }> {
+  try {
+    return await request<{ followers: number; following: number }>(`${BASE}/followers/count`);
+  } catch {
+    return { followers: 0, following: 0 };
+  }
+}
+
+export async function isFollowing(slug: string): Promise<boolean> {
+  try {
+    const res = await request<{ following: boolean }>(`${BASE}/is-following/${slug}`);
+    return res.following;
+  } catch {
+    return false;
+  }
+}
+
+export async function fetchTrending(): Promise<TrendingData> {
+  try {
+    return await request<TrendingData>(`${BASE}/trending`);
+  } catch {
+    return { entries: [], totalUsers: 0 };
   }
 }
 

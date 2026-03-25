@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchLeaderboard } from "./api";
-import type { LeaderboardEntry } from "./types";
+import { fetchLeaderboard, fetchTrending } from "./api";
+import type { LeaderboardEntry, TrendingEntry } from "./types";
 import { TIERS, GENRES } from "./constants";
 import "./index.css";
 
@@ -43,20 +43,31 @@ function TierBadges({ tierCounts }: { tierCounts: Record<string, number> }) {
 
 export default function Leaderboard() {
   const navigate = useNavigate();
+  const [tab, setTab] = useState<"leaderboard" | "trending">("leaderboard");
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
+  const [trendingEntries, setTrendingEntries] = useState<TrendingEntry[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<"score" | "lists" | "top">("score");
   const [genre, setGenre] = useState("All");
 
   useEffect(() => {
-    setLoading(true);
-    fetchLeaderboard(sort, genre).then((data) => {
-      setEntries(data.entries);
-      setTotalUsers(data.totalUsers);
-      setLoading(false);
-    });
-  }, [sort, genre]);
+    if (tab === "leaderboard") {
+      setLoading(true);
+      fetchLeaderboard(sort, genre).then((data) => {
+        setEntries(data.entries);
+        setTotalUsers(data.totalUsers);
+        setLoading(false);
+      });
+    } else {
+      setLoading(true);
+      fetchTrending().then((data) => {
+        setTrendingEntries(data.entries);
+        setTotalUsers(data.totalUsers);
+        setLoading(false);
+      });
+    }
+  }, [sort, genre, tab]);
 
   const topThree = useMemo(() => entries.slice(0, 3), [entries]);
   const rest = useMemo(() => entries.slice(3), [entries]);
@@ -72,34 +83,80 @@ export default function Leaderboard() {
         Most popular actresses across {totalUsers} public tier list{totalUsers !== 1 ? "s" : ""}
       </p>
 
-      <div className="lb-controls">
-        <div className="lb-sort-group">
-          <span className="lb-sort-label">Sort by:</span>
-          {SORT_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              className={`lb-sort-btn ${sort === opt.value ? "active" : ""}`}
-              onClick={() => setSort(opt.value)}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-        <div className="lb-genre-group">
-          {GENRES.map((g) => (
-            <button
-              key={g}
-              className={`genre-pill ${genre === g ? "active" : ""}`}
-              onClick={() => setGenre(g)}
-            >
-              {g}
-            </button>
-          ))}
-        </div>
+      {/* Tab switcher */}
+      <div className="lb-tabs">
+        <button className={`lb-tab ${tab === "leaderboard" ? "active" : ""}`} onClick={() => setTab("leaderboard")}>
+          Rankings
+        </button>
+        <button className={`lb-tab ${tab === "trending" ? "active" : ""}`} onClick={() => setTab("trending")}>
+          Trending
+        </button>
       </div>
 
+      {tab === "leaderboard" && (
+        <div className="lb-controls">
+          <div className="lb-sort-group">
+            <span className="lb-sort-label">Sort by:</span>
+            {SORT_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                className={`lb-sort-btn ${sort === opt.value ? "active" : ""}`}
+                onClick={() => setSort(opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <div className="lb-genre-group">
+            {GENRES.map((g) => (
+              <button
+                key={g}
+                className={`genre-pill ${genre === g ? "active" : ""}`}
+                onClick={() => setGenre(g)}
+              >
+                {g}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {loading ? (
-        <div className="loading">Loading leaderboard...</div>
+        <div className="loading">Loading {tab === "trending" ? "trending" : "leaderboard"}...</div>
+      ) : tab === "trending" ? (
+        trendingEntries.length === 0 ? (
+          <div className="settings-empty">
+            <h2>No trending data yet</h2>
+            <p style={{ color: "#666", marginTop: 8 }}>
+              Trending actresses will appear here once more users make their tier lists public.
+            </p>
+          </div>
+        ) : (
+          <div className="lb-trending">
+            {trendingEntries.map((entry) => (
+              <div
+                key={entry.actressId}
+                className="lb-trending-card"
+                onClick={() => navigate(`/actress/${entry.actressId}`)}
+              >
+                <span className="lb-trending-rank">#{entry.rank}</span>
+                {entry.image ? (
+                  <img className="lb-trending-img" src={entry.image} alt={entry.name} referrerPolicy="no-referrer" />
+                ) : (
+                  <div className="lb-trending-placeholder">{entry.name.charAt(0)}</div>
+                )}
+                <div className="lb-trending-info">
+                  <span className="lb-trending-name">{entry.name}</span>
+                  <span className="lb-trending-known">{entry.known}</span>
+                </div>
+                <div className="lb-trending-stats">
+                  <span className="lb-trending-score">{entry.trendScore}</span>
+                  <span className="lb-trending-meta">{entry.userCount} list{entry.userCount !== 1 ? "s" : ""} · {entry.avgScore.toFixed(1)} avg</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
       ) : entries.length === 0 ? (
         <div className="settings-empty">
           <h2>No public tier lists yet</h2>

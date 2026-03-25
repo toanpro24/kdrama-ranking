@@ -88,6 +88,33 @@ export interface CommunityStats {
   rank: number | null;
 }
 
+export interface FollowingUser {
+  userId: string;
+  displayName: string;
+  picture: string;
+  shareSlug: string;
+  bio: string;
+  rankedCount: number;
+}
+
+export interface TrendingEntry {
+  rank: number;
+  actressId: string;
+  name: string;
+  image: string | null;
+  known: string;
+  genre: string;
+  userCount: number;
+  avgScore: number;
+  topTierCount: number;
+  trendScore: number;
+}
+
+export interface TrendingData {
+  entries: TrendingEntry[];
+  totalUsers: number;
+}
+
 export interface CompareUser {
   displayName: string;
   picture: string;
