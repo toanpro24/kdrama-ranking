@@ -83,7 +83,7 @@ describe('constants', () => {
 
   describe('TIER_WEIGHT', () => {
     it('assigns highest weight to splus', () => {
-      expect(TIER_WEIGHT['splus']).toBe(6)
+      expect(TIER_WEIGHT['splus']).toBe(10)
     })
 
     it('assigns lowest weight to d', () => {

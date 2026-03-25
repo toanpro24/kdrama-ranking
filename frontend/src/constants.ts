@@ -26,7 +26,7 @@ export const TIER_COLOR: Record<string, string> = Object.fromEntries(
 
 /** Tier id → scoring weight for recommendations */
 export const TIER_WEIGHT: Record<string, number> = {
-  splus: 6, s: 5, a: 4, b: 3, c: 2, d: 1,
+  splus: 10, s: 8, a: 5, b: 3, c: 2, d: 1,
 };
 
 export const GENRES = ["All", "Romance", "Fantasy", "Thriller", "Comedy", "Action", "Horror", "Historical", "Drama"];

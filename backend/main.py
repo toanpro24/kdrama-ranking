@@ -962,7 +962,7 @@ def get_shared_tier_list(slug: str):
 
 
 # ── Leaderboard ──
-TIER_WEIGHT = {"splus": 6, "s": 5, "a": 4, "b": 3, "c": 2, "d": 1}
+TIER_WEIGHT = {"splus": 10, "s": 8, "a": 5, "b": 3, "c": 2, "d": 1}
 
 
 def _build_leaderboard():
@@ -1065,6 +1065,106 @@ def get_leaderboard(sort: str = "score", genre: str | None = None):
     return {"entries": entries, "totalUsers": len(set(
         p["userId"] for p in user_profiles_collection.find({"tierListVisibility": "public"}, {"userId": 1})
     ))}
+
+
+# ── Per-actress community stats ──
+@app.get("/api/actresses/{actress_id}/community")
+def get_actress_community_stats(actress_id: str):
+    """Get community ranking stats for a specific actress."""
+    # Get public user IDs
+    public_uids = [
+        p["userId"] for p in user_profiles_collection.find(
+            {"tierListVisibility": "public"}, {"userId": 1}
+        )
+    ]
+    if not public_uids:
+        return {"totalLists": 0, "avgScore": 0, "tierCounts": {}, "topTierCount": 0, "rank": None}
+
+    # Get all rankings for this actress from public users
+    rankings = list(user_rankings_collection.find({
+        "userId": {"$in": public_uids},
+        "actressId": actress_id,
+        "tier": {"$exists": True, "$ne": None},
+    }))
+
+    tier_counts: dict = {}
+    tier_sum = 0
+    top_tier_count = 0
+    for r in rankings:
+        tier = r.get("tier")
+        if not tier or tier not in TIER_WEIGHT:
+            continue
+        tier_counts[tier] = tier_counts.get(tier, 0) + 1
+        tier_sum += TIER_WEIGHT[tier]
+        if tier in ("splus", "s", "a"):
+            top_tier_count += 1
+
+    total = len(rankings)
+    avg_score = round(tier_sum / total, 1) if total > 0 else 0
+
+    # Get rank from leaderboard
+    lb_entries = _build_leaderboard()
+    rank = None
+    for e in lb_entries:
+        if e["actressId"] == actress_id:
+            rank = e["rank"]
+            break
+
+    return {
+        "totalLists": total,
+        "avgScore": avg_score,
+        "tierCounts": tier_counts,
+        "topTierCount": top_tier_count,
+        "rank": rank,
+    }
+
+
+# ── Compare tier lists ──
+@app.get("/api/compare/{slug1}/{slug2}")
+def compare_tier_lists(slug1: str, slug2: str):
+    """Compare two users' tier lists side-by-side."""
+    profiles = []
+    for slug in (slug1, slug2):
+        profile = user_profiles_collection.find_one({"shareSlug": slug})
+        if not profile:
+            raise HTTPException(404, f"Tier list '{slug}' not found")
+        if profile["tierListVisibility"] == "private":
+            raise HTTPException(403, f"Tier list '{slug}' is private")
+        profiles.append(profile)
+
+    results = []
+    for profile in profiles:
+        uid = profile["userId"]
+        user_actress_ids = [
+            d["actressId"] for d in user_actresses_collection.find({"userId": uid}, {"actressId": 1})
+        ]
+        query = {"_id": {"$in": [_oid(aid) for aid in user_actress_ids]}}
+        docs = list(actresses_collection.find(query, {"gallery": 0}))
+        for d in docs:
+            d["_id"] = str(d["_id"])
+        _merge_user_data(docs, uid)
+        results.append({
+            "displayName": profile.get("displayName", ""),
+            "picture": profile.get("picture", ""),
+            "shareSlug": profile.get("shareSlug", ""),
+            "actresses": docs,
+        })
+
+    # Compute agreement stats
+    tiers1 = {a["_id"]: a.get("tier") for a in results[0]["actresses"] if a.get("tier")}
+    tiers2 = {a["_id"]: a.get("tier") for a in results[1]["actresses"] if a.get("tier")}
+    common = set(tiers1.keys()) & set(tiers2.keys())
+    exact_match = sum(1 for aid in common if tiers1[aid] == tiers2[aid])
+    agreement_pct = round(exact_match / len(common) * 100) if common else 0
+
+    return {
+        "users": results,
+        "stats": {
+            "commonActresses": len(common),
+            "exactMatches": exact_match,
+            "agreementPct": agreement_pct,
+        },
+    }
 
 
 async def _find_tmdb_person(name: str, known_drama: str | None = None) -> int | None:

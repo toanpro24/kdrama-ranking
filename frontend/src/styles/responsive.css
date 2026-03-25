@@ -131,6 +131,15 @@
   /* Guest banner */
   .guest-banner span { font-size: 11px; }
 
+  /* Compare Lists */
+  .cl-title { font-size: 22px; }
+  .cl-users { flex-direction: column; gap: 12px; }
+  .cl-agreement { flex-direction: column; gap: 12px; }
+  .cl-table-header, .cl-table-row { grid-template-columns: 60px 1fr 60px; }
+  .cl-tier-pill { font-size: 10px; padding: 2px 6px; min-width: 26px; }
+  .cl-actress-img { width: 28px; height: 28px; }
+  .cl-actress-placeholder { width: 28px; height: 28px; font-size: 12px; }
+
   /* Leaderboard */
   .lb-podium { flex-direction: column; align-items: center; }
   .lb-podium-card { max-width: 100%; }

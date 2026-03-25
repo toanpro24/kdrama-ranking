@@ -1,4 +1,4 @@
-import type { Actress, Stats, ChatMessage, UserProfile, SharedTierListData, LeaderboardData } from "./types";
+import type { Actress, Stats, ChatMessage, UserProfile, SharedTierListData, LeaderboardData, CommunityStats, CompareData } from "./types";
 import { toast } from "./toast";
 
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
@@ -222,6 +222,22 @@ export async function fetchLeaderboard(sort = "score", genre?: string): Promise<
     return await request<LeaderboardData>(`${BASE}/leaderboard?${params}`);
   } catch {
     return { entries: [], totalUsers: 0 };
+  }
+}
+
+export async function fetchCommunityStats(actressId: string): Promise<CommunityStats> {
+  try {
+    return await request<CommunityStats>(`${BASE}/actresses/${actressId}/community`);
+  } catch {
+    return { totalLists: 0, avgScore: 0, tierCounts: {}, topTierCount: 0, rank: null };
+  }
+}
+
+export async function fetchCompare(slug1: string, slug2: string): Promise<CompareData | null> {
+  try {
+    return await request<CompareData>(`${BASE}/compare/${slug1}/${slug2}`);
+  } catch {
+    return null;
   }
 }
 

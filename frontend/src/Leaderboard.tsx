@@ -15,9 +15,9 @@ const TIER_COLORS: Record<string, string> = {};
 TIERS.forEach((t) => { TIER_COLORS[t.id] = t.color; });
 
 function ScoreBar({ score }: { score: number }) {
-  // Score ranges 0-6 (splus=6), show as percentage
-  const pct = Math.min((score / 6) * 100, 100);
-  const color = score >= 5 ? "#E500A4" : score >= 4 ? "#FF2942" : score >= 3 ? "#FF7B3A" : score >= 2 ? "#FFC53A" : "#3AD9A0";
+  // Score ranges 0-10 (splus=10), show as percentage
+  const pct = Math.min((score / 10) * 100, 100);
+  const color = score >= 8 ? "#E500A4" : score >= 5 ? "#FF2942" : score >= 3 ? "#FF7B3A" : score >= 2 ? "#FFC53A" : "#3AD9A0";
   return (
     <div className="lb-score-bar-bg">
       <div className="lb-score-bar-fill" style={{ width: `${pct}%`, background: color }} />

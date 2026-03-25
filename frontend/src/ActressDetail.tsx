@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import type { Actress, WatchStatus } from "./types";
-import { fetchActress, rateDrama, updateWatchStatus } from "./api";
-import { TIER_MAP } from "./constants";
+import type { Actress, WatchStatus, CommunityStats } from "./types";
+import { fetchActress, rateDrama, updateWatchStatus, fetchCommunityStats } from "./api";
+import { TIERS, TIER_MAP } from "./constants";
 import { toast } from "./toast";
 import { useAuth } from "./AuthContext";
 import { useActresses } from "./ActressContext";
@@ -16,6 +16,7 @@ export default function ActressDetail() {
   const [actress, setActress] = useState<Actress | null>(null);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [community, setCommunity] = useState<CommunityStats | null>(null);
 
   useEffect(() => {
     if (!id || authLoading) return;
@@ -23,6 +24,7 @@ export default function ActressDetail() {
     fetchActress(id)
       .then((data) => { setActress(data); setLoading(false); })
       .catch(() => setLoading(false));
+    fetchCommunityStats(id).then(setCommunity);
   }, [id, authLoading, user]);
 
   // Sync a drama field change to both local state and shared context
@@ -138,6 +140,45 @@ export default function ActressDetail() {
             </div>
           </div>
         </div>
+
+        {/* Community Stats Card */}
+        {community && community.totalLists > 0 && (
+          <div className="detail-card community-card">
+            <h3 className="detail-card-title">
+              Community Rankings
+              {community.rank && <span className="community-rank-badge">#{community.rank}</span>}
+            </h3>
+            <div className="community-stats-row">
+              <div className="community-stat">
+                <span className="community-stat-num">{community.avgScore.toFixed(1)}</span>
+                <span className="community-stat-label">Avg Score</span>
+              </div>
+              <div className="community-stat">
+                <span className="community-stat-num">{community.totalLists}</span>
+                <span className="community-stat-label">{community.totalLists === 1 ? "List" : "Lists"}</span>
+              </div>
+              <div className="community-stat">
+                <span className="community-stat-num">{community.topTierCount}</span>
+                <span className="community-stat-label">Top Tier</span>
+              </div>
+            </div>
+            <div className="community-tier-dist">
+              {TIERS.map((t) => {
+                const count = community.tierCounts[t.id] || 0;
+                const pct = community.totalLists > 0 ? (count / community.totalLists) * 100 : 0;
+                return (
+                  <div key={t.id} className="community-tier-row">
+                    <span className="community-tier-label" style={{ color: t.color }}>{t.label}</span>
+                    <div className="community-tier-bar-bg">
+                      <div className="community-tier-bar-fill" style={{ width: `${pct}%`, background: t.color }} />
+                    </div>
+                    <span className="community-tier-count">{count}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Photo Gallery Card */}
         <div className="detail-section">

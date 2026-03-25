@@ -79,3 +79,27 @@ export interface LeaderboardData {
   entries: LeaderboardEntry[];
   totalUsers: number;
 }
+
+export interface CommunityStats {
+  totalLists: number;
+  avgScore: number;
+  tierCounts: Record<string, number>;
+  topTierCount: number;
+  rank: number | null;
+}
+
+export interface CompareUser {
+  displayName: string;
+  picture: string;
+  shareSlug: string;
+  actresses: Actress[];
+}
+
+export interface CompareData {
+  users: [CompareUser, CompareUser];
+  stats: {
+    commonActresses: number;
+    exactMatches: number;
+    agreementPct: number;
+  };
+}

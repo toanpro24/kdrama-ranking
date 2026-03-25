@@ -15,6 +15,7 @@ import Watchlist from './Watchlist'
 import UserSettings from './UserSettings'
 import SharedTierList from './SharedTierList'
 import Leaderboard from './Leaderboard'
+import CompareLists from './CompareLists'
 import NotFound from './NotFound'
 
 // Register service worker for PWA
@@ -42,6 +43,7 @@ createRoot(document.getElementById('root')!).render(
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/settings" element={<UserSettings />} />
           <Route path="/tier-list/:slug" element={<SharedTierList />} />
+          <Route path="/compare-lists/:slug1/:slug2" element={<CompareLists />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </ActressProvider>

@@ -209,6 +209,48 @@
 .detail-award-text { font-size: 13px; color: #ccc; font-weight: 500; line-height: 1.4; }
 .detail-empty { font-size: 13px; color: #444; font-style: italic; }
 
+/* ── Community Stats Card ── */
+.detail-card {
+  background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+  border-radius: 20px; padding: 28px;
+  animation: fadeSlideUp 0.5s ease both; animation-delay: 0.15s;
+}
+.detail-card-title {
+  font-family: 'Playfair Display', serif; font-size: 18px; font-weight: 700;
+  color: #fff; margin: 0 0 20px; display: flex; align-items: center; gap: 10px;
+}
+.community-card { }
+.community-rank-badge {
+  font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 700;
+  background: linear-gradient(135deg, #FF2942, #E500A4);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.community-stats-row {
+  display: flex; gap: 16px; margin-bottom: 20px;
+}
+.community-stat {
+  flex: 1; text-align: center; padding: 12px 8px;
+  background: rgba(255,255,255,0.03); border-radius: 12px;
+}
+.community-stat-num {
+  display: block; font-size: 20px; font-weight: 800; color: #fff;
+  font-family: 'Playfair Display', serif;
+}
+.community-stat-label {
+  display: block; font-size: 10px; color: #666; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;
+}
+.community-tier-dist { display: flex; flex-direction: column; gap: 8px; }
+.community-tier-row { display: flex; align-items: center; gap: 10px; }
+.community-tier-label { font-size: 12px; font-weight: 700; width: 28px; text-align: right; flex-shrink: 0; }
+.community-tier-bar-bg {
+  flex: 1; height: 6px; background: rgba(255,255,255,0.04);
+  border-radius: 3px; overflow: hidden;
+}
+.community-tier-bar-fill { height: 100%; border-radius: 3px; transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1); }
+.community-tier-count { font-size: 12px; font-weight: 600; color: #666; width: 24px; flex-shrink: 0; }
+
 @media (max-width: 640px) {
   .detail-hero-content { flex-direction: column; align-items: center; text-align: center; padding: 24px; }
   .detail-portrait { width: 160px; height: 210px; }

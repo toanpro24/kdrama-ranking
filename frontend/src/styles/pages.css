@@ -463,3 +463,75 @@
   font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 6px;
   border: 1px solid; background: transparent;
 }
+
+/* ── Compare Lists Page ── */
+.cl-title {
+  font-family: 'Playfair Display', serif; font-size: 30px; font-weight: 700;
+  color: #fff; margin: 0 0 24px; text-align: center;
+}
+.cl-users {
+  display: flex; align-items: center; justify-content: center; gap: 24px;
+  margin-bottom: 24px;
+}
+.cl-user {
+  display: flex; align-items: center; gap: 10px; padding: 12px 20px;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 14px; cursor: pointer; transition: all 0.2s;
+}
+.cl-user:hover { border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.05); }
+.cl-user-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+.cl-user-name { font-size: 15px; font-weight: 600; color: #fff; }
+.cl-vs {
+  font-family: 'Playfair Display', serif; font-size: 20px; font-weight: 900;
+  color: #FF2942; text-shadow: 0 0 20px rgba(255,41,66,0.3);
+}
+
+/* Agreement stats */
+.cl-agreement {
+  display: flex; justify-content: center; gap: 24px; margin-bottom: 28px;
+  padding: 16px 24px; background: rgba(255,255,255,0.02);
+  border: 1px solid rgba(255,255,255,0.04); border-radius: 16px;
+}
+.cl-agreement-stat { text-align: center; }
+.cl-agreement-num {
+  display: block; font-size: 24px; font-weight: 800; color: #fff;
+  font-family: 'Playfair Display', serif;
+}
+.cl-agreement-label { display: block; font-size: 11px; color: #666; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+/* Comparison table */
+.cl-table {
+  background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 18px; overflow: hidden;
+}
+.cl-table-header {
+  display: grid; grid-template-columns: 80px 1fr 80px;
+  padding: 12px 16px; font-size: 12px; font-weight: 700; color: #888;
+  text-transform: uppercase; letter-spacing: 0.5px; text-align: center;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.cl-table-row {
+  display: grid; grid-template-columns: 80px 1fr 80px;
+  padding: 10px 16px; align-items: center; cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.02); transition: background 0.15s;
+}
+.cl-table-row:hover { background: rgba(255,255,255,0.03); }
+.cl-table-row:last-child { border-bottom: none; }
+.cl-table-row.cl-match { background: rgba(58,217,160,0.04); }
+.cl-table-row.cl-match:hover { background: rgba(58,217,160,0.08); }
+.cl-col-tier { display: flex; justify-content: center; align-items: center; }
+.cl-col-name { display: flex; align-items: center; gap: 10px; }
+.cl-actress-cell { overflow: hidden; }
+.cl-actress-img { width: 36px; height: 36px; border-radius: 10px; object-fit: cover; flex-shrink: 0; }
+.cl-actress-placeholder {
+  width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.06);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; font-weight: 700; color: #444; flex-shrink: 0;
+}
+.cl-actress-name { font-size: 13px; font-weight: 600; color: #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-tier-pill {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 3px 10px; border-radius: 6px; font-size: 11px; font-weight: 700;
+  color: #fff; min-width: 32px; text-align: center;
+}
+.cl-tier-pill.cl-unranked { background: rgba(255,255,255,0.06); color: #555; }
