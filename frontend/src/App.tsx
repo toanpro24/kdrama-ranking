@@ -2,13 +2,15 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { toPng } from "html-to-image";
 import type { Actress } from "./types";
-import { createActress, updateTier, deleteActress, resetData, clearTiers, searchActressOnline, getActressFromTMDB } from "./api";
+import { createActress, updateTier, deleteActress, resetData, clearTiers, searchActressOnline, getActressFromTMDB, fetchProfile, updateProfile } from "./api";
 import type { ActressSearchResult } from "./api";
+import type { UserProfile } from "./types";
 import { TIERS, GENRES } from "./constants";
 import { useActresses } from "./ActressContext";
 import { useAuth } from "./AuthContext";
 import { useTouchDrag } from "./useTouchDrag";
 import ActressCard from "./ActressCard";
+import { toast } from "./toast";
 import "./index.css";
 
 export default function App() {
@@ -34,6 +36,7 @@ export default function App() {
   const [addingFromTMDB, setAddingFromTMDB] = useState(false);
   const [sharePreview, setSharePreview] = useState<string | null>(null);
   const [shareCapturing, setShareCapturing] = useState(false);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const tiersRef = useRef<HTMLElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -43,6 +46,12 @@ export default function App() {
     setTimeout(() => setHeroVisible(true), 100);
     setTimeout(() => setTiersVisible(true), 500);
   }, []);
+
+  // Load user profile for share link
+  useEffect(() => {
+    if (user) fetchProfile().then(setUserProfile);
+    else setUserProfile(null);
+  }, [user]);
 
   // Auto-scroll when dragging near viewport edges
   useEffect(() => {
@@ -301,6 +310,21 @@ export default function App() {
     setSharePreview(null);
   }, [sharePreview]);
 
+  const shareLink = userProfile ? `${window.location.origin}/tier-list/${userProfile.shareSlug}` : "";
+
+  const handleCopyShareLink = useCallback(async () => {
+    if (!userProfile) return;
+    if (userProfile.tierListVisibility === "private") {
+      // Auto-upgrade to link_only so the link actually works
+      try {
+        const updated = await updateProfile({ tierListVisibility: "link_only" });
+        setUserProfile(updated);
+      } catch { /* ignore */ }
+    }
+    await navigator.clipboard.writeText(shareLink);
+    toast.success("Share link copied!");
+  }, [userProfile, shareLink]);
+
   if (loading) return <div className="loading" role="status" aria-live="polite">Loading actresses...</div>;
 
   return (
@@ -398,12 +422,26 @@ export default function App() {
       {/* Share Preview Modal */}
       {sharePreview && (
         <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="share-modal-title" onClick={() => setSharePreview(null)}>
-          <div className="modal-box" style={{ maxWidth: 600 }} onClick={(e) => e.stopPropagation()}>
+          <div className="modal-box share-modal" onClick={(e) => e.stopPropagation()}>
             <h3 className="modal-title" id="share-modal-title">Share Tier List</h3>
-            <img src={sharePreview} alt="Tier list preview" style={{ width: "100%", borderRadius: 8, marginBottom: 16 }} />
+            <img src={sharePreview} alt="Tier list preview" className="share-preview-img" />
+            {user && userProfile && (
+              <div className="share-link-section">
+                <label className="share-link-label">Share Link</label>
+                <div className="share-link-row">
+                  <input className="share-link-input" value={shareLink} readOnly onClick={(e) => (e.target as HTMLInputElement).select()} />
+                  <button className="share-link-copy-btn" onClick={handleCopyShareLink}>
+                    {userProfile.tierListVisibility === "private" ? "Make Visible & Copy" : "Copy Link"}
+                  </button>
+                </div>
+                {userProfile.tierListVisibility === "private" && (
+                  <span className="share-link-hint">Your list is private. Copying will set visibility to "Link Only".</span>
+                )}
+              </div>
+            )}
             <div className="modal-actions">
               <button className="modal-btn cancel" onClick={() => setSharePreview(null)}>Cancel</button>
-              <button className="modal-btn primary" onClick={handleShareDownload}>Download</button>
+              <button className="modal-btn primary" onClick={handleShareDownload}>Download Image</button>
             </div>
           </div>
         </div>

@@ -24,6 +24,30 @@
 .modal-btn.primary { background: linear-gradient(135deg, #FF2942, #FF4655); color: #fff; }
 .modal-btn.primary:hover { box-shadow: 0 4px 16px rgba(255,41,66,0.3); transform: translateY(-1px); }
 
+/* ── Share Modal ── */
+.share-modal { max-width: 600px; text-align: left; }
+.share-preview-img { width: 100%; border-radius: 8px; margin-bottom: 16px; }
+.share-link-section {
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px; padding: 14px; margin-bottom: 16px;
+}
+.share-link-label { display: block; font-size: 12px; font-weight: 600; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+.share-link-row { display: flex; gap: 8px; }
+.share-link-input {
+  flex: 1; padding: 8px 12px; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.04);
+  color: #ccc; font-size: 13px; font-family: 'DM Sans', sans-serif;
+}
+.share-link-input:focus { outline: none; border-color: #FF2942; }
+.share-link-copy-btn {
+  padding: 8px 16px; border-radius: 8px; border: none;
+  background: rgba(255,255,255,0.08); color: #fff; font-size: 12px; font-weight: 600;
+  cursor: pointer; font-family: 'DM Sans', sans-serif; white-space: nowrap;
+  transition: all 0.2s;
+}
+.share-link-copy-btn:hover { background: rgba(255,255,255,0.14); }
+.share-link-hint { display: block; font-size: 11px; color: #FF7B3A; margin-top: 6px; }
+
 /* ── Add Panel ── */
 .add-panel {
   padding: 0 24px 16px; background: rgba(255,41,66,0.02);

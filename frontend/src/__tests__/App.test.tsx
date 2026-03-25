@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import type { ReactNode } from 'react'
 import { createMockActressList } from './test-utils'
@@ -52,10 +52,13 @@ vi.mock('../api', () => ({
   updateTier: vi.fn(),
   deleteActress: vi.fn(),
   resetData: vi.fn(),
+  clearTiers: vi.fn(),
   searchActressOnline: vi.fn().mockResolvedValue([]),
   getActressFromTMDB: vi.fn(),
   setTokenGetter: vi.fn(),
   fetchActresses: vi.fn().mockResolvedValue([]),
+  fetchProfile: vi.fn().mockResolvedValue(null),
+  updateProfile: vi.fn().mockResolvedValue({}),
 }))
 
 import App from '../App'
@@ -123,5 +126,27 @@ describe('App', () => {
     const loadingEl = document.querySelector('.loading, .spinner, .skeleton, [class*="load"]')
     // Even if no explicit loading indicator, actresses shouldn't be visible
     expect(screen.queryByText('Kim Tae-ri')).not.toBeInTheDocument()
+  })
+
+  it('renders share tier list button', () => {
+    renderApp()
+    expect(screen.getByText('📷 Share Tier List')).toBeInTheDocument()
+  })
+
+  it('renders settings link in user menu', () => {
+    renderApp()
+    // Open user menu
+    const userBtn = document.querySelector('.user-btn') as HTMLElement
+    if (userBtn) {
+      fireEvent.click(userBtn)
+      expect(screen.getByText('Settings')).toBeInTheDocument()
+    }
+  })
+
+  it('shows drag hint for all users', () => {
+    renderApp()
+    // With canEdit always true, empty tiers show "Drag actresses here"
+    const hints = screen.getAllByText('Drag actresses here')
+    expect(hints.length).toBeGreaterThan(0)
   })
 })

@@ -15,10 +15,26 @@ export default function SharedTierList() {
   useEffect(() => {
     if (!slug) return;
     fetchSharedTierList(slug).then((d) => {
-      if (d) setData(d);
-      else setError("This tier list doesn't exist or is private.");
+      if (d) {
+        setData(d);
+        // Update meta tags for social sharing
+        const name = d.displayName || "Someone";
+        document.title = `${name}'s K-Drama Tier List`;
+        const setMeta = (prop: string, content: string) => {
+          let el = document.querySelector(`meta[property="${prop}"]`) || document.querySelector(`meta[name="${prop}"]`);
+          if (!el) { el = document.createElement("meta"); el.setAttribute(prop.startsWith("og:") ? "property" : "name", prop); document.head.appendChild(el); }
+          el.setAttribute("content", content);
+        };
+        setMeta("og:title", `${name}'s K-Drama Tier List`);
+        setMeta("og:description", d.bio || `Check out ${name}'s Korean drama actress rankings!`);
+        setMeta("twitter:title", `${name}'s K-Drama Tier List`);
+        setMeta("twitter:description", d.bio || `Check out ${name}'s Korean drama actress rankings!`);
+      } else {
+        setError("This tier list doesn't exist or is private.");
+      }
       setLoading(false);
     });
+    return () => { document.title = "K-Drama Actress Ranking"; };
   }, [slug]);
 
   const tierActresses = useMemo(() => {
