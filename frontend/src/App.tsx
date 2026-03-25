@@ -32,6 +32,8 @@ export default function App() {
   const [searchResults, setSearchResults] = useState<ActressSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
   const [addingFromTMDB, setAddingFromTMDB] = useState(false);
+  const [sharePreview, setSharePreview] = useState<string | null>(null);
+  const [shareCapturing, setShareCapturing] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const tiersRef = useRef<HTMLElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -154,25 +156,23 @@ export default function App() {
   const handleDrop = useCallback(async (e: React.DragEvent, targetTier: string | null) => {
     e.preventDefault();
     setDragOverTier(null);
-    if (!user) return;
     const actressId = e.dataTransfer.getData("actressId");
     const sourceTier = e.dataTransfer.getData("sourceTier");
     const effectiveSrc = sourceTier === "unranked" ? null : sourceTier;
     if (effectiveSrc === targetTier) return;
 
     updateActressTier(actressId, targetTier);
-    await updateTier(actressId, targetTier);
+    if (user) await updateTier(actressId, targetTier);
   }, [user]);
 
   // Touch drag-and-drop for mobile
   const handleTouchDrop = useCallback(async (actressId: string, targetTier: string | null) => {
-    if (!user) return;
     const actress = actresses.find((a) => a._id === actressId);
     if (!actress) return;
     const sourceTier = actress.tier || null;
     if (sourceTier === targetTier) return;
     updateActressTier(actressId, targetTier);
-    await updateTier(actressId, targetTier);
+    if (user) await updateTier(actressId, targetTier);
   }, [user, actresses, updateActressTier]);
 
   const { handleTouchStart, handleTouchMove, handleTouchEnd } = useTouchDrag({
@@ -258,8 +258,8 @@ export default function App() {
 
   const handleShareTierList = useCallback(async () => {
     if (!tiersRef.current) return;
+    setShareCapturing(true);
     const el = tiersRef.current;
-    // Temporarily disable animations and boost subtle backgrounds for capture
     const style = document.createElement("style");
     style.textContent = `
       .tiers-section * { animation: none !important; }
@@ -273,26 +273,33 @@ export default function App() {
         pixelRatio: 2,
         cacheBust: true,
       });
-      // Use Web Share API if available, otherwise download
-      if (navigator.share && navigator.canShare) {
-        const res = await fetch(dataUrl);
-        const blob = await res.blob();
-        const file = new File([blob], "my-kdrama-tier-list.png", { type: "image/png" });
-        if (navigator.canShare({ files: [file] })) {
-          await navigator.share({ title: "My K-Drama Tier List", files: [file] });
-          return;
-        }
-      }
-      const link = document.createElement("a");
-      link.download = "my-kdrama-tier-list.png";
-      link.href = dataUrl;
-      link.click();
+      setSharePreview(dataUrl);
     } catch (err) {
       console.error("Screenshot failed:", err);
     } finally {
       document.head.removeChild(style);
+      setShareCapturing(false);
     }
   }, []);
+
+  const handleShareDownload = useCallback(async () => {
+    if (!sharePreview) return;
+    if (navigator.share && navigator.canShare) {
+      const res = await fetch(sharePreview);
+      const blob = await res.blob();
+      const file = new File([blob], "my-kdrama-tier-list.png", { type: "image/png" });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ title: "My K-Drama Tier List", files: [file] });
+        setSharePreview(null);
+        return;
+      }
+    }
+    const link = document.createElement("a");
+    link.download = "my-kdrama-tier-list.png";
+    link.href = sharePreview;
+    link.click();
+    setSharePreview(null);
+  }, [sharePreview]);
 
   if (loading) return <div className="loading" role="status" aria-live="polite">Loading actresses...</div>;
 
@@ -351,7 +358,7 @@ export default function App() {
           <button onClick={() => navigate("/watchlist")} className="nav-tab" role="tab" aria-selected="false">📺 Watch List</button>
         </div>
         <div className="nav-actions">
-          <button onClick={handleShareTierList} className="nav-btn share-btn">📷 Share Tier List</button>
+          <button onClick={handleShareTierList} className="nav-btn share-btn" disabled={shareCapturing}>{shareCapturing ? "Capturing..." : "📷 Share Tier List"}</button>
           {user && <button onClick={() => setShowResetConfirm(true)} className="nav-btn">↺ Reset</button>}
           {user && <button onClick={() => setShowAdd(!showAdd)} className="nav-btn primary">{showAdd ? "✕ Close" : "+ Add Actress"}</button>}
           {user ? (
@@ -384,6 +391,20 @@ export default function App() {
         <div className="guest-banner">
           <span>Sign in with Google to save your personal tier rankings, ratings, and watch list</span>
           <button className="guest-banner-btn" onClick={signInWithGoogle}>Sign in with Google</button>
+        </div>
+      )}
+
+      {/* Share Preview Modal */}
+      {sharePreview && (
+        <div className="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="share-modal-title" onClick={() => setSharePreview(null)}>
+          <div className="modal-box" style={{ maxWidth: 600 }} onClick={(e) => e.stopPropagation()}>
+            <h3 className="modal-title" id="share-modal-title">Share Tier List</h3>
+            <img src={sharePreview} alt="Tier list preview" style={{ width: "100%", borderRadius: 8, marginBottom: 16 }} />
+            <div className="modal-actions">
+              <button className="modal-btn cancel" onClick={() => setSharePreview(null)}>Cancel</button>
+              <button className="modal-btn primary" onClick={handleShareDownload}>Download</button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -521,10 +542,10 @@ export default function App() {
                 </div>
                 <div className="tier-content">
                   {tierActresses[tier.id]?.map((a) => (
-                    <ActressCard key={a._id} actress={a} color={tier.color} canEdit={!!user} onRemove={handleRemoveRequest} onDragStart={handleDragStart} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} />
+                    <ActressCard key={a._id} actress={a} color={tier.color} canEdit onRemove={handleRemoveRequest} onDragStart={handleDragStart} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} />
                   ))}
                   {(!tierActresses[tier.id] || tierActresses[tier.id].length === 0) && (
-                    <div className="empty-hint">{user ? "Drag actresses here" : "Sign in to rank"}</div>
+                    <div className="empty-hint">Drag actresses here</div>
                   )}
                 </div>
               </div>
@@ -566,7 +587,7 @@ export default function App() {
             </div>
             <div className="unranked-grid">
               {visibleUnranked.map((a) => (
-                <ActressCard key={a._id} actress={a} color="#555" canEdit={!!user} onRemove={handleRemoveRequest} onDragStart={handleDragStart} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} />
+                <ActressCard key={a._id} actress={a} color="#555" canEdit onRemove={handleRemoveRequest} onDragStart={handleDragStart} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} />
               ))}
               {filteredUnranked.length === 0 && (
                 <div className="empty-state-box">

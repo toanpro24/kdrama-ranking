@@ -21,6 +21,8 @@
 .modal-btn.cancel:hover { background: rgba(255,255,255,0.1); color: #fff; }
 .modal-btn.danger { background: linear-gradient(135deg, #FF2942, #FF4655); color: #fff; }
 .modal-btn.danger:hover { box-shadow: 0 4px 16px rgba(255,41,66,0.3); transform: translateY(-1px); }
+.modal-btn.primary { background: linear-gradient(135deg, #FF2942, #FF4655); color: #fff; }
+.modal-btn.primary:hover { box-shadow: 0 4px 16px rgba(255,41,66,0.3); transform: translateY(-1px); }
 
 /* ── Add Panel ── */
 .add-panel {

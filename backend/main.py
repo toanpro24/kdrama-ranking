@@ -310,13 +310,15 @@ def _ensure_user_list(uid: str):
 def get_actresses(genre: str | None = None, search: str | None = None, user=Depends(get_current_user)):
     query = {}
 
-    # Filter to user's personal list if logged in
+    # Filter to user's personal list if logged in, or default actresses for guests
     if user:
         _ensure_user_list(user["uid"])
         user_actress_ids = [
             d["actressId"] for d in user_actresses_collection.find({"userId": user["uid"]}, {"actressId": 1})
         ]
         query["_id"] = {"$in": [_oid(aid) for aid in user_actress_ids]}
+    else:
+        query["default"] = True
 
     if genre and genre != "All":
         query["genre"] = genre
