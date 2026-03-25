@@ -45,3 +45,10 @@ class ActressResponse(BaseModel):
 
 class TierUpdate(BaseModel):
     tier: Optional[str] = None  # "splus", "s", "a", "b", "c", "d", or None for unranked
+
+
+class ProfileUpdate(BaseModel):
+    displayName: Optional[str] = None
+    bio: Optional[str] = None
+    shareSlug: Optional[str] = None
+    tierListVisibility: Optional[str] = None  # "private", "link_only", "public"

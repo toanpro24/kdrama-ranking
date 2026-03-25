@@ -377,6 +377,7 @@ export default function App() {
                     </div>
                   </div>
                   <div className="user-menu-divider" />
+                  <button className="user-menu-item" onClick={() => { setShowUserMenu(false); navigate("/settings"); }}>Settings</button>
                   <button className="user-menu-item" onClick={() => { setShowUserMenu(false); logout(); }}>Sign out</button>
                 </div>
               )}

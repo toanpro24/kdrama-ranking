@@ -25,3 +25,8 @@ user_drama_status_collection.create_index([("userId", 1), ("actressId", 1), ("dr
 user_actresses_collection = db["user_actresses"]
 user_actresses_collection.create_index([("userId", 1), ("actressId", 1)], unique=True)
 user_actresses_collection.create_index("userId")
+
+# User profiles (for social features — share slug, visibility, bio)
+user_profiles_collection = db["user_profiles"]
+user_profiles_collection.create_index("userId", unique=True)
+user_profiles_collection.create_index("shareSlug", unique=True, sparse=True)

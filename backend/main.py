@@ -18,9 +18,9 @@ from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
 
 from auth import get_current_user, require_user
-from database import actresses_collection, user_rankings_collection, user_drama_status_collection, user_actresses_collection
+from database import actresses_collection, user_rankings_collection, user_drama_status_collection, user_actresses_collection, user_profiles_collection
 from drama_metadata import DRAMA_META
-from models import ActressCreate, TierUpdate
+from models import ActressCreate, TierUpdate, ProfileUpdate
 from seed import seed
 
 load_dotenv()
@@ -864,6 +864,101 @@ def clear_tiers(user=Depends(require_user)):
     uid = user["uid"]
     result = user_rankings_collection.delete_many({"userId": uid})
     return {"message": f"Cleared {result.deleted_count} tier assignments"}
+
+
+# ── User Profile ──
+def _get_or_create_profile(user: dict) -> dict:
+    """Get existing profile or create a default one."""
+    profile = user_profiles_collection.find_one({"userId": user["uid"]})
+    if profile:
+        profile["_id"] = str(profile["_id"])
+        return profile
+    # Create default profile from Firebase user info
+    import re
+    base_slug = re.sub(r"[^a-z0-9]+", "-", (user.get("name") or "user").lower()).strip("-")
+    # Ensure slug uniqueness
+    slug = base_slug
+    counter = 1
+    while user_profiles_collection.find_one({"shareSlug": slug}):
+        slug = f"{base_slug}-{counter}"
+        counter += 1
+    doc = {
+        "userId": user["uid"],
+        "displayName": user.get("name", ""),
+        "bio": "",
+        "shareSlug": slug,
+        "tierListVisibility": "private",
+        "picture": user.get("picture", ""),
+    }
+    result = user_profiles_collection.insert_one(doc)
+    doc["_id"] = str(result.inserted_id)
+    return doc
+
+
+@app.get("/api/profile")
+def get_profile(user=Depends(require_user)):
+    """Get the current user's profile."""
+    profile = _get_or_create_profile(user)
+    return profile
+
+
+@app.put("/api/profile")
+def update_profile(data: ProfileUpdate, user=Depends(require_user)):
+    """Update the current user's profile."""
+    import re
+    _get_or_create_profile(user)  # ensure exists
+    updates = {}
+    if data.displayName is not None:
+        name = data.displayName.strip()
+        if not name or len(name) > 50:
+            raise HTTPException(400, "Display name must be 1-50 characters")
+        updates["displayName"] = name
+    if data.bio is not None:
+        if len(data.bio) > 200:
+            raise HTTPException(400, "Bio must be 200 characters or less")
+        updates["bio"] = data.bio.strip()
+    if data.shareSlug is not None:
+        slug = re.sub(r"[^a-z0-9]+", "-", data.shareSlug.lower()).strip("-")
+        if not slug or len(slug) < 3 or len(slug) > 30:
+            raise HTTPException(400, "Share slug must be 3-30 characters (letters, numbers, hyphens)")
+        existing = user_profiles_collection.find_one({"shareSlug": slug, "userId": {"$ne": user["uid"]}})
+        if existing:
+            raise HTTPException(409, "This share link is already taken")
+        updates["shareSlug"] = slug
+    if data.tierListVisibility is not None:
+        if data.tierListVisibility not in ("private", "link_only", "public"):
+            raise HTTPException(400, "Visibility must be private, link_only, or public")
+        updates["tierListVisibility"] = data.tierListVisibility
+    if not updates:
+        raise HTTPException(400, "No fields to update")
+    user_profiles_collection.update_one({"userId": user["uid"]}, {"$set": updates})
+    return _get_or_create_profile(user)
+
+
+@app.get("/api/shared/{slug}")
+def get_shared_tier_list(slug: str):
+    """View a public/link_only tier list by share slug."""
+    profile = user_profiles_collection.find_one({"shareSlug": slug})
+    if not profile:
+        raise HTTPException(404, "Tier list not found")
+    if profile["tierListVisibility"] == "private":
+        raise HTTPException(403, "This tier list is private")
+    uid = profile["userId"]
+    # Get user's actresses with their tiers
+    user_actress_ids = [
+        d["actressId"] for d in user_actresses_collection.find({"userId": uid}, {"actressId": 1})
+    ]
+    query = {"_id": {"$in": [_oid(aid) for aid in user_actress_ids]}}
+    docs = list(actresses_collection.find(query, {"gallery": 0}))
+    for d in docs:
+        d["_id"] = str(d["_id"])
+    _merge_user_data(docs, uid)
+    return {
+        "displayName": profile.get("displayName", ""),
+        "bio": profile.get("bio", ""),
+        "picture": profile.get("picture", ""),
+        "actresses": docs,
+    }
 
 
 async def _find_tmdb_person(name: str, known_drama: str | None = None) -> int | None:

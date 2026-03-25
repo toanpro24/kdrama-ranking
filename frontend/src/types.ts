@@ -44,3 +44,20 @@ export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
 }
+
+export interface UserProfile {
+  _id: string;
+  userId: string;
+  displayName: string;
+  bio: string;
+  shareSlug: string;
+  tierListVisibility: "private" | "link_only" | "public";
+  picture: string;
+}
+
+export interface SharedTierListData {
+  displayName: string;
+  bio: string;
+  picture: string;
+  actresses: Actress[];
+}

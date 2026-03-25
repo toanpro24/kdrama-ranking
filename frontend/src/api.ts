@@ -1,4 +1,4 @@
-import type { Actress, Stats, ChatMessage } from "./types";
+import type { Actress, Stats, ChatMessage, UserProfile, SharedTierListData } from "./types";
 import { toast } from "./toast";
 
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
@@ -190,6 +190,29 @@ export async function searchActressOnline(q: string): Promise<ActressSearchResul
 
 export async function getActressFromTMDB(tmdbId: number) {
   return request<any>(`${BASE}/search-actress/${tmdbId}`);
+}
+
+export async function fetchProfile(): Promise<UserProfile | null> {
+  try {
+    return await request<UserProfile>(`${BASE}/profile`);
+  } catch {
+    return null;
+  }
+}
+
+export async function updateProfile(data: Partial<Pick<UserProfile, "displayName" | "bio" | "shareSlug" | "tierListVisibility">>): Promise<UserProfile> {
+  return request<UserProfile>(`${BASE}/profile`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchSharedTierList(slug: string): Promise<SharedTierListData | null> {
+  try {
+    return await request<SharedTierListData>(`${BASE}/shared/${slug}`);
+  } catch {
+    return null;
+  }
 }
 
 export async function askAI(
