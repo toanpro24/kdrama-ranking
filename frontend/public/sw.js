@@ -1,4 +1,4 @@
-const CACHE_NAME = "kdrama-v1";
+const CACHE_NAME = "kdrama-v2";
 const PRECACHE = ["/", "/favicon.svg"];
 
 self.addEventListener("install", (e) => {
@@ -19,19 +19,37 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
-  // Only handle http/https requests (skip chrome-extension, etc.)
   if (!e.request.url.startsWith("http")) return;
-  // Network-first for API calls, cache-first for assets
+  // Skip API calls — let them go straight to network
   if (e.request.url.includes("/api/")) return;
-  e.respondWith(
-    caches.match(e.request).then((cached) =>
-      cached || fetch(e.request).then((res) => {
+
+  // Network-first for HTML and JS/CSS (ensures fresh code on reload)
+  const url = new URL(e.request.url);
+  const isAsset = /\.(js|css|html)$/.test(url.pathname) || e.request.mode === "navigate";
+
+  if (isAsset) {
+    // Network-first: try network, fall back to cache
+    e.respondWith(
+      fetch(e.request).then((res) => {
         if (res.ok && res.type === "basic") {
           const clone = res.clone();
           caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
         }
         return res;
-      })
-    )
-  );
+      }).catch(() => caches.match(e.request))
+    );
+  } else {
+    // Cache-first for images, fonts, etc.
+    e.respondWith(
+      caches.match(e.request).then((cached) =>
+        cached || fetch(e.request).then((res) => {
+          if (res.ok && res.type === "basic") {
+            const clone = res.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(e.request, clone));
+          }
+          return res;
+        })
+      )
+    );
+  }
 });
