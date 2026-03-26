@@ -16,14 +16,18 @@ const mockFollowing = [
 
 const mockCounts = { followers: 3, following: 2 }
 
+const mockProfile = { _id: 'p1', userId: 'test-user', displayName: 'Test', bio: '', shareSlug: 'test-user', tierListVisibility: 'public', picture: '' }
+
 const mockFetchFollowing = vi.fn().mockResolvedValue(mockFollowing)
 const mockFetchFollowerCount = vi.fn().mockResolvedValue(mockCounts)
 const mockUnfollowUser = vi.fn().mockResolvedValue(true)
+const mockFetchProfile = vi.fn().mockResolvedValue(mockProfile)
 
 vi.mock('../api', () => ({
   fetchFollowing: (...args: any[]) => mockFetchFollowing(...args),
   fetchFollowerCount: (...args: any[]) => mockFetchFollowerCount(...args),
   unfollowUser: (...args: any[]) => mockUnfollowUser(...args),
+  fetchProfile: (...args: any[]) => mockFetchProfile(...args),
   setTokenGetter: vi.fn(),
 }))
 

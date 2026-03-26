@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchFollowing, fetchFollowerCount, unfollowUser } from "./api";
-import type { FollowingUser } from "./types";
+import { fetchFollowing, fetchFollowerCount, unfollowUser, fetchProfile } from "./api";
+import type { FollowingUser, UserProfile } from "./types";
 import { useAuth } from "./AuthContext";
 import "./index.css";
 
@@ -10,14 +10,16 @@ export default function FollowingPage() {
   const { user, loading: authLoading } = useAuth();
   const [following, setFollowing] = useState<FollowingUser[]>([]);
   const [counts, setCounts] = useState({ followers: 0, following: 0 });
+  const [myProfile, setMyProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (authLoading) return;
     if (!user) { setLoading(false); return; }
-    Promise.all([fetchFollowing(), fetchFollowerCount()]).then(([f, c]) => {
+    Promise.all([fetchFollowing(), fetchFollowerCount(), fetchProfile()]).then(([f, c, p]) => {
       setFollowing(f);
       setCounts(c);
+      setMyProfile(p);
       setLoading(false);
     });
   }, [user, authLoading]);
@@ -84,13 +86,15 @@ export default function FollowingPage() {
                 </div>
               </div>
               <div className="fw-actions">
-                <button
-                  className="fw-compare-btn"
-                  onClick={(e) => { e.stopPropagation(); navigate(`/compare-lists/${u.shareSlug}/`); }}
-                  title="Compare tier lists"
-                >
-                  Compare
-                </button>
+                {myProfile?.shareSlug && myProfile.tierListVisibility !== "private" && (
+                  <button
+                    className="fw-compare-btn"
+                    onClick={(e) => { e.stopPropagation(); navigate(`/compare-lists/${myProfile.shareSlug}/${u.shareSlug}`); }}
+                    title="Compare tier lists"
+                  >
+                    Compare
+                  </button>
+                )}
                 <button
                   className="fw-unfollow-btn"
                   onClick={(e) => { e.stopPropagation(); handleUnfollow(u.shareSlug); }}

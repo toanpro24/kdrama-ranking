@@ -17,7 +17,6 @@ export default function SharedTierList() {
 
   useEffect(() => {
     if (!slug) return;
-    if (user) isFollowing(slug).then(setFollowing);
     fetchSharedTierList(slug).then((d) => {
       if (d) {
         setData(d);
@@ -40,6 +39,11 @@ export default function SharedTierList() {
     });
     return () => { document.title = "K-Drama Actress Ranking"; };
   }, [slug]);
+
+  useEffect(() => {
+    if (!slug || !user) { setFollowing(false); return; }
+    isFollowing(slug).then(setFollowing);
+  }, [slug, user]);
 
   const tierActresses = useMemo(() => {
     if (!data) return {};
