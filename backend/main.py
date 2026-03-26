@@ -983,13 +983,16 @@ TIER_WEIGHT = {"splus": 10, "s": 8, "a": 5, "b": 3, "c": 2, "d": 1}
 
 
 def _build_leaderboard():
-    """Aggregate actress rankings across all public users into a leaderboard."""
+    """Aggregate actress rankings across all public users into a leaderboard.
+
+    Returns (entries, totalUsers) tuple.
+    """
     from datetime import datetime, timezone
 
     # Check cache first
     cached = leaderboard_cache_collection.find_one(sort=[("cachedAt", -1)])
     if cached:
-        return cached["entries"]
+        return cached["entries"], cached.get("totalUsers", 0)
 
     # Get public user IDs
     public_uids = [
@@ -998,7 +1001,7 @@ def _build_leaderboard():
         )
     ]
     if not public_uids:
-        return []
+        return [], 0
 
     # Get all rankings from public users
     rankings = list(user_rankings_collection.find({"userId": {"$in": public_uids}}))
@@ -1020,7 +1023,7 @@ def _build_leaderboard():
             stats["topTierCount"] += 1
 
     if not actress_stats:
-        return []
+        return [], len(public_uids)
 
     # Fetch actress info
     actress_ids = list(actress_stats.keys())
@@ -1052,19 +1055,22 @@ def _build_leaderboard():
     for i, e in enumerate(entries):
         e["rank"] = i + 1
 
+    total_users = len(public_uids)
+
     # Cache results
     leaderboard_cache_collection.insert_one({
         "entries": entries,
+        "totalUsers": total_users,
         "cachedAt": datetime.now(timezone.utc),
     })
 
-    return entries
+    return entries, total_users
 
 
 @app.get("/api/leaderboard")
 def get_leaderboard(sort: str = "score", genre: str | None = None):
     """Get the global actress leaderboard."""
-    entries = _build_leaderboard()
+    entries, total_users = _build_leaderboard()
 
     if genre and genre != "All":
         entries = [e for e in entries if e["genre"] == genre]
@@ -1079,9 +1085,7 @@ def get_leaderboard(sort: str = "score", genre: str | None = None):
     for i, e in enumerate(entries):
         e["rank"] = i + 1
 
-    return {"entries": entries, "totalUsers": len(set(
-        p["userId"] for p in user_profiles_collection.find({"tierListVisibility": "public"}, {"userId": 1})
-    ))}
+    return {"entries": entries, "totalUsers": total_users}
 
 
 # ── Per-actress community stats ──
@@ -1120,7 +1124,7 @@ def get_actress_community_stats(actress_id: str):
     avg_score = round(tier_sum / total, 1) if total > 0 else 0
 
     # Get rank from leaderboard
-    lb_entries = _build_leaderboard()
+    lb_entries, _ = _build_leaderboard()
     rank = None
     for e in lb_entries:
         if e["actressId"] == actress_id:
