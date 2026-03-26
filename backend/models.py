@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 
 
@@ -43,8 +43,18 @@ class ActressResponse(BaseModel):
         populate_by_name = True
 
 
+VALID_TIERS = {"splus", "s", "a", "b", "c", "d"}
+
+
 class TierUpdate(BaseModel):
     tier: Optional[str] = None  # "splus", "s", "a", "b", "c", "d", or None for unranked
+
+    @field_validator("tier")
+    @classmethod
+    def validate_tier(cls, v: str | None) -> str | None:
+        if v is not None and v not in VALID_TIERS:
+            raise ValueError(f"Invalid tier '{v}'. Must be one of: {', '.join(sorted(VALID_TIERS))}")
+        return v
 
 
 class ProfileUpdate(BaseModel):

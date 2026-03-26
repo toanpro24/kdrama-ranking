@@ -20,7 +20,7 @@ from slowapi.util import get_remote_address
 from auth import get_current_user, require_user
 from database import actresses_collection, user_rankings_collection, user_drama_status_collection, user_actresses_collection, user_profiles_collection, leaderboard_cache_collection, user_follows_collection
 from drama_metadata import DRAMA_META
-from models import ActressCreate, TierUpdate, ProfileUpdate
+from models import ActressCreate, TierUpdate, ProfileUpdate, VALID_TIERS
 from seed import seed
 
 load_dotenv()
@@ -295,7 +295,7 @@ app.add_middleware(
 
 def _ensure_user_list(uid: str):
     """Seed a user's actress list on first visit (copy only default/seed actresses)."""
-    if user_actresses_collection.count_documents({"userId": uid}) > 0:
+    if user_actresses_collection.find_one({"userId": uid}, {"_id": 1}):
         return
     # Only seed with the original default actresses, not user-added ones
     default_ids = [str(d["_id"]) for d in actresses_collection.find({"default": True}, {"_id": 1})]
@@ -541,6 +541,8 @@ def update_tier(actress_id: str, update: TierUpdate, user=Depends(require_user))
 def bulk_update_tiers(updates: list[dict], user=Depends(require_user)):
     for u in updates:
         tier = u.get("tier")
+        if tier and tier not in VALID_TIERS:
+            raise HTTPException(400, f"Invalid tier '{tier}'")
         if tier:
             user_rankings_collection.update_one(
                 {"userId": user["uid"], "actressId": u["id"]},
@@ -1171,7 +1173,7 @@ def compare_tier_lists(slug1: str, slug2: str):
             d["actressId"] for d in user_actresses_collection.find({"userId": uid}, {"actressId": 1})
         ]
         query = {"_id": {"$in": [_oid(aid) for aid in user_actress_ids]}}
-        docs = list(actresses_collection.find(query, {"gallery": 0}))
+        docs = list(actresses_collection.find(query, {"name": 1, "image": 1, "known": 1, "genre": 1}))
         for d in docs:
             d["_id"] = str(d["_id"])
         _merge_user_data(docs, uid)
