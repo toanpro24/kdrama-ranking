@@ -869,30 +869,40 @@ def clear_tiers(user=Depends(require_user)):
 # ── User Profile ──
 def _get_or_create_profile(user: dict) -> dict:
     """Get existing profile or create a default one."""
+    from pymongo.errors import DuplicateKeyError
+    import re
+
     profile = user_profiles_collection.find_one({"userId": user["uid"]})
     if profile:
         profile["_id"] = str(profile["_id"])
         return profile
     # Create default profile from Firebase user info
-    import re
     base_slug = re.sub(r"[^a-z0-9]+", "-", (user.get("name") or "user").lower()).strip("-")
-    # Ensure slug uniqueness
     slug = base_slug
     counter = 1
-    while user_profiles_collection.find_one({"shareSlug": slug}):
-        slug = f"{base_slug}-{counter}"
-        counter += 1
-    doc = {
-        "userId": user["uid"],
-        "displayName": user.get("name", ""),
-        "bio": "",
-        "shareSlug": slug,
-        "tierListVisibility": "private",
-        "picture": user.get("picture", ""),
-    }
-    result = user_profiles_collection.insert_one(doc)
-    doc["_id"] = str(result.inserted_id)
-    return doc
+    for _ in range(20):  # bounded retry to prevent infinite loop
+        try:
+            doc = {
+                "userId": user["uid"],
+                "displayName": user.get("name", ""),
+                "bio": "",
+                "shareSlug": slug,
+                "tierListVisibility": "private",
+                "picture": user.get("picture", ""),
+            }
+            result = user_profiles_collection.insert_one(doc)
+            doc["_id"] = str(result.inserted_id)
+            return doc
+        except DuplicateKeyError:
+            # Either slug or userId collision — re-check if our profile was created concurrently
+            profile = user_profiles_collection.find_one({"userId": user["uid"]})
+            if profile:
+                profile["_id"] = str(profile["_id"])
+                return profile
+            # Slug taken by another user — try next slug
+            slug = f"{base_slug}-{counter}"
+            counter += 1
+    raise HTTPException(status_code=500, detail="Could not generate unique profile slug")
 
 
 @app.get("/api/profile")
@@ -931,7 +941,11 @@ def update_profile(data: ProfileUpdate, user=Depends(require_user)):
         updates["tierListVisibility"] = data.tierListVisibility
     if not updates:
         raise HTTPException(400, "No fields to update")
-    user_profiles_collection.update_one({"userId": user["uid"]}, {"$set": updates})
+    from pymongo.errors import DuplicateKeyError
+    try:
+        user_profiles_collection.update_one({"userId": user["uid"]}, {"$set": updates})
+    except DuplicateKeyError:
+        raise HTTPException(409, "This share link is already taken")
     # When going private, remove all followers to prevent data leaks
     if updates.get("tierListVisibility") == "private":
         user_follows_collection.delete_many({"followingId": user["uid"]})
