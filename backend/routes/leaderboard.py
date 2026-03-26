@@ -113,8 +113,9 @@ def _build_leaderboard():
 
 
 @router.get("/leaderboard")
-def get_leaderboard(sort: str = "score", genre: str | None = None):
-    """Get the global actress leaderboard."""
+def get_leaderboard(sort: str = "score", genre: str | None = None,
+                    page: int = 1, pageSize: int = 50):
+    """Get the global actress leaderboard with pagination."""
     entries, total_users = _build_leaderboard()
 
     if genre and genre != "All":
@@ -130,7 +131,14 @@ def get_leaderboard(sort: str = "score", genre: str | None = None):
     for i, e in enumerate(entries):
         e["rank"] = i + 1
 
-    return {"entries": entries, "totalUsers": total_users}
+    total = len(entries)
+    page = max(1, page)
+    pageSize = max(1, min(pageSize, 100))
+    start = (page - 1) * pageSize
+    paged = entries[start:start + pageSize]
+
+    return {"entries": paged, "totalUsers": total_users, "total": total,
+            "page": page, "pageSize": pageSize}
 
 
 # ── Per-actress community stats ──

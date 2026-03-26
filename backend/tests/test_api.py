@@ -360,7 +360,9 @@ class TestGetWatchlist:
 
         resp = await client_authed.get("/api/watchlist")
         assert resp.status_code == 200
-        assert resp.json() == []
+        data = resp.json()
+        assert data["dramas"] == []
+        assert data["total"] == 0
 
     @pytest.mark.anyio
     async def test_watchlist_with_data(self, client_authed, actresses_col):
@@ -384,9 +386,10 @@ class TestGetWatchlist:
         resp = await client_authed.get("/api/watchlist")
         assert resp.status_code == 200
         data = resp.json()
-        assert len(data) == 1
-        assert data[0]["title"] == "Love in the Moonlight"
-        assert data[0]["watchStatus"] == "watched"
+        assert data["total"] == 1
+        assert len(data["dramas"]) == 1
+        assert data["dramas"][0]["title"] == "Love in the Moonlight"
+        assert data["dramas"][0]["watchStatus"] == "watched"
 
 
 # ── POST /api/reset ──

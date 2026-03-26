@@ -6,6 +6,7 @@ import os
 from fastapi import APIRouter, Depends, Header, HTTPException, Request
 
 from auth import require_user
+from rate_limit import limiter
 from database import (
     actresses_collection,
     user_rankings_collection,
@@ -37,7 +38,8 @@ router = APIRouter(prefix="/api")
 
 # ── POST reset (back to 36 defaults, per-user) ──
 @router.post("/reset")
-def reset_data(user=Depends(require_user)):
+@limiter.limit("5/minute")
+def reset_data(request: Request, user=Depends(require_user)):
     """Reset user's list back to the 36 default actresses, all unranked."""
     uid = user["uid"]
     # Clear user's actress list, tiers, and drama statuses
@@ -51,7 +53,8 @@ def reset_data(user=Depends(require_user)):
 
 # ── POST clear tiers (move all to unranked, per-user) ──
 @router.post("/clear-tiers")
-def clear_tiers(user=Depends(require_user)):
+@limiter.limit("5/minute")
+def clear_tiers(request: Request, user=Depends(require_user)):
     """Move all of the user's actresses back to the unranked pool (keep the full list)."""
     uid = user["uid"]
     result = user_rankings_collection.delete_many({"userId": uid})
@@ -60,7 +63,8 @@ def clear_tiers(user=Depends(require_user)):
 
 # ── DELETE actress permanently (admin-protected) ──
 @router.delete("/actresses/{actress_id}/admin", dependencies=[Depends(_require_admin)])
-def admin_delete_actress(actress_id: str):
+@limiter.limit("5/minute")
+def admin_delete_actress(request: Request, actress_id: str):
     """Permanently remove an actress from the global pool (admin only)."""
     oid = _oid(actress_id)
     result = actresses_collection.delete_one({"_id": oid})
@@ -75,6 +79,7 @@ def admin_delete_actress(actress_id: str):
 
 # ── POST refresh all actress data from TMDB (admin-protected) ──
 @router.post("/refresh-all", dependencies=[Depends(_require_admin)])
+@limiter.limit("2/minute")
 async def refresh_all_data(request: Request):
     """Re-fetch dramas, gallery photos, and profile images for all actresses from TMDB."""
     actresses = list(actresses_collection.find({}))

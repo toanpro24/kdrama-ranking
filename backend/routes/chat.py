@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
 from auth import get_current_user
+from rate_limit import limiter
 from database import actresses_collection, user_actresses_collection
 from drama_metadata import DRAMA_META
 from helpers import _oid, _merge_user_data, _ensure_user_list
@@ -59,6 +60,7 @@ def _build_system_prompt(user_id: str | None) -> str:
 
 
 @router.post("/chat")
+@limiter.limit("10/minute")
 async def chat(request: Request, user=Depends(get_current_user)):
     if not ANTHROPIC_API_KEY:
         raise HTTPException(status_code=503, detail="AI chat is not configured")

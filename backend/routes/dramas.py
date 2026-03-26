@@ -137,7 +137,7 @@ async def get_drama(title: str, user=Depends(get_current_user)):
 
 # ── GET all dramas ──
 @router.get("/dramas")
-def search_dramas():
+def search_dramas(page: int = 1, pageSize: int = 50, search: str | None = None):
     pipeline = [
         {"$unwind": "$dramas"},
         {"$group": {
@@ -158,16 +158,25 @@ def search_dramas():
             "cast": 1,
         }},
     ]
-    return list(actresses_collection.aggregate(pipeline))
+    results = list(actresses_collection.aggregate(pipeline))
+    if search:
+        lower = search.lower()
+        results = [d for d in results if lower in d["title"].lower()]
+    total = len(results)
+    page = max(1, page)
+    pageSize = max(1, min(pageSize, 100))
+    start = (page - 1) * pageSize
+    return {"dramas": results[start:start + pageSize], "total": total,
+            "page": page, "pageSize": pageSize}
 
 
 # ── GET user's watchlist ──
 @router.get("/watchlist")
-def get_watchlist(user=Depends(require_user)):
+def get_watchlist(page: int = 1, pageSize: int = 50, user=Depends(require_user)):
     user_id = user["uid"]
     statuses = list(user_drama_status_collection.find({"userId": user_id, "watchStatus": {"$ne": None}}))
     if not statuses:
-        return []
+        return {"dramas": [], "total": 0, "page": 1, "pageSize": pageSize}
 
     drama_titles = list({s["dramaTitle"] for s in statuses})
     pipeline = [
@@ -200,4 +209,9 @@ def get_watchlist(user=Depends(require_user)):
             "actressId": s["actressId"],
             "cast": drama.get("cast", []),
         })
-    return result
+    total = len(result)
+    page = max(1, page)
+    pageSize = max(1, min(pageSize, 100))
+    start = (page - 1) * pageSize
+    return {"dramas": result[start:start + pageSize], "total": total,
+            "page": page, "pageSize": pageSize}

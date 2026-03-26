@@ -1,9 +1,10 @@
 """Follow system routes — follow, unfollow, following list, follower counts."""
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pymongo.errors import DuplicateKeyError
 
 from auth import require_user
+from rate_limit import limiter
 from database import (
     user_profiles_collection,
     user_follows_collection,
@@ -13,7 +14,8 @@ router = APIRouter(prefix="/api")
 
 
 @router.post("/follow/{slug}")
-def follow_user(slug: str, user=Depends(require_user)):
+@limiter.limit("20/minute")
+def follow_user(request: Request, slug: str, user=Depends(require_user)):
     """Follow a user by their share slug."""
     target = user_profiles_collection.find_one({"shareSlug": slug})
     if not target:
@@ -33,7 +35,8 @@ def follow_user(slug: str, user=Depends(require_user)):
 
 
 @router.delete("/follow/{slug}")
-def unfollow_user(slug: str, user=Depends(require_user)):
+@limiter.limit("20/minute")
+def unfollow_user(request: Request, slug: str, user=Depends(require_user)):
     """Unfollow a user by their share slug."""
     target = user_profiles_collection.find_one({"shareSlug": slug})
     if not target:

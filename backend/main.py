@@ -12,9 +12,10 @@ import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
+
+from rate_limit import limiter
 
 from database import actresses_collection
 from seed import seed
@@ -80,7 +81,6 @@ async def lifespan(app: FastAPI):
 
 
 # ── App creation ──
-limiter = Limiter(key_func=get_remote_address)
 app = FastAPI(title="K-Drama Actress Ranking API", lifespan=lifespan)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)

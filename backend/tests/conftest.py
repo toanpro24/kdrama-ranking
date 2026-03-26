@@ -67,8 +67,9 @@ import routes.chat as chat_route  # noqa: E402
 import routes.admin as admin_route  # noqa: E402
 
 # Disable rate limiter for tests so we don't hit rate limits.
-# slowapi's Limiter stores this as ._enabled (set via constructor's enabled param).
-app.state.limiter.enabled = False
+from rate_limit import limiter as _rate_limiter  # noqa: E402
+_rate_limiter.enabled = False
+app.state.limiter = _rate_limiter
 
 # Patch collection references on ALL modules that imported them.
 # pymongo.MongoClient is mocked, so these are already MagicMocks via database.py,

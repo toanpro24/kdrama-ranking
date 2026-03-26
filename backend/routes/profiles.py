@@ -2,10 +2,11 @@
 
 import re
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pymongo.errors import DuplicateKeyError
 
 from auth import require_user
+from rate_limit import limiter
 from database import (
     actresses_collection,
     user_actresses_collection,
@@ -26,7 +27,8 @@ def get_profile(user=Depends(require_user)):
 
 
 @router.put("/profile")
-def update_profile(data: ProfileUpdate, user=Depends(require_user)):
+@limiter.limit("10/minute")
+def update_profile(request: Request, data: ProfileUpdate, user=Depends(require_user)):
     """Update the current user's profile."""
     _get_or_create_profile(user)  # ensure exists
     updates = {}

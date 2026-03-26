@@ -104,6 +104,67 @@ class TestLeaderboard:
         assert data["entries"][0]["name"] == "B"  # More lists
 
 
+class TestLeaderboardPagination:
+    @pytest.mark.anyio
+    async def test_pagination_metadata(self, client_authed):
+        _mock_leaderboard_cache.find_one.return_value = {
+            "entries": [
+                {"actressId": str(ObjectId()), "name": f"A{i}", "avgScore": 10 - i, "rank": i + 1,
+                 "totalLists": 5, "topTierCount": 3, "genre": "Romance", "tierCounts": {}}
+                for i in range(5)
+            ],
+            "totalUsers": 10,
+        }
+
+        resp = await client_authed.get("/api/leaderboard", params={"page": 1, "pageSize": 2})
+        data = resp.json()
+        assert data["total"] == 5
+        assert data["page"] == 1
+        assert data["pageSize"] == 2
+        assert len(data["entries"]) == 2
+
+    @pytest.mark.anyio
+    async def test_pagination_page_2(self, client_authed):
+        _mock_leaderboard_cache.find_one.return_value = {
+            "entries": [
+                {"actressId": str(ObjectId()), "name": f"A{i}", "avgScore": 10 - i, "rank": i + 1,
+                 "totalLists": 5, "topTierCount": 3, "genre": "Romance", "tierCounts": {}}
+                for i in range(5)
+            ],
+            "totalUsers": 10,
+        }
+
+        resp = await client_authed.get("/api/leaderboard", params={"page": 2, "pageSize": 2})
+        data = resp.json()
+        assert len(data["entries"]) == 2
+        assert data["entries"][0]["name"] == "A2"
+
+    @pytest.mark.anyio
+    async def test_pagination_last_page(self, client_authed):
+        _mock_leaderboard_cache.find_one.return_value = {
+            "entries": [
+                {"actressId": str(ObjectId()), "name": f"A{i}", "avgScore": 10 - i, "rank": i + 1,
+                 "totalLists": 5, "topTierCount": 3, "genre": "Romance", "tierCounts": {}}
+                for i in range(5)
+            ],
+            "totalUsers": 10,
+        }
+
+        resp = await client_authed.get("/api/leaderboard", params={"page": 3, "pageSize": 2})
+        data = resp.json()
+        assert len(data["entries"]) == 1  # Only 1 left on page 3
+
+    @pytest.mark.anyio
+    async def test_pagination_clamps_page_size(self, client_authed):
+        _mock_leaderboard_cache.find_one.return_value = {
+            "entries": [], "totalUsers": 0,
+        }
+
+        resp = await client_authed.get("/api/leaderboard", params={"pageSize": 999})
+        data = resp.json()
+        assert data["pageSize"] == 100  # Clamped to max
+
+
 class TestCommunityStats:
     @pytest.mark.anyio
     async def test_community_stats(self, client_authed, profiles_col):

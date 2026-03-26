@@ -7,6 +7,7 @@ import urllib.parse
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from auth import get_current_user, require_user
+from rate_limit import limiter
 from database import (
     actresses_collection,
     user_rankings_collection,
@@ -68,7 +69,8 @@ def get_actress(actress_id: str, user=Depends(get_current_user)):
 
 # ── POST create actress ──
 @router.post("/actresses", status_code=201)
-def create_actress(actress: ActressCreate, user=Depends(get_current_user)):
+@limiter.limit("10/minute")
+def create_actress(request: Request, actress: ActressCreate, user=Depends(get_current_user)):
     # Check for duplicate by name (case-insensitive)
     existing = actresses_collection.find_one({"name": {"$regex": f"^{actress.name}$", "$options": "i"}})
     if existing:
@@ -102,7 +104,8 @@ def create_actress(actress: ActressCreate, user=Depends(get_current_user)):
 
 # ── PATCH update tier (per-user) ──
 @router.patch("/actresses/{actress_id}/tier")
-def update_tier(actress_id: str, update: TierUpdate, user=Depends(require_user)):
+@limiter.limit("60/minute")
+def update_tier(request: Request, actress_id: str, update: TierUpdate, user=Depends(require_user)):
     # Verify actress exists
     if not actresses_collection.find_one({"_id": _oid(actress_id)}):
         raise HTTPException(status_code=404, detail="Actress not found")
@@ -119,7 +122,8 @@ def update_tier(actress_id: str, update: TierUpdate, user=Depends(require_user))
 
 # ── PATCH bulk update tiers (per-user) ──
 @router.patch("/actresses/bulk-tier")
-def bulk_update_tiers(updates: list[dict], user=Depends(require_user)):
+@limiter.limit("20/minute")
+def bulk_update_tiers(request: Request, updates: list[dict], user=Depends(require_user)):
     for u in updates:
         tier = u.get("tier")
         if tier and tier not in VALID_TIERS:
@@ -179,7 +183,8 @@ def update_watch_status(actress_id: str, drama_title: str, body: dict, user=Depe
 
 # ── DELETE actress from user's list (per-user) ──
 @router.delete("/actresses/{actress_id}")
-def delete_actress(actress_id: str, user=Depends(require_user)):
+@limiter.limit("20/minute")
+def delete_actress(request: Request, actress_id: str, user=Depends(require_user)):
     result = user_actresses_collection.delete_one({"userId": user["uid"], "actressId": actress_id})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Actress not in your list")
@@ -190,6 +195,7 @@ def delete_actress(actress_id: str, user=Depends(require_user)):
 
 # ── TMDB search ──
 @router.get("/search-actress")
+@limiter.limit("30/minute")
 async def search_actress_online(request: Request, q: str):
     """Search TMDB for a Korean actress and return structured data."""
     if not q or len(q) < 2:
@@ -224,6 +230,7 @@ async def search_actress_online(request: Request, q: str):
 
 
 @router.get("/search-actress/{tmdb_id}")
+@limiter.limit("30/minute")
 async def get_actress_details_from_tmdb(request: Request, tmdb_id: int):
     """Fetch full actress details + Korean drama credits from TMDB."""
     person = await _tmdb_get(f"/person/{tmdb_id}", {"language": "en-US"})
