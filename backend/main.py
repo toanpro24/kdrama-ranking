@@ -982,89 +982,100 @@ def get_shared_tier_list(slug: str):
 TIER_WEIGHT = {"splus": 10, "s": 8, "a": 5, "b": 3, "c": 2, "d": 1}
 
 
+import threading
+_leaderboard_lock = threading.Lock()
+
+
 def _build_leaderboard():
     """Aggregate actress rankings across all public users into a leaderboard.
 
-    Returns (entries, totalUsers) tuple.
+    Returns (entries, totalUsers) tuple. Uses a lock to prevent cache stampede.
     """
     from datetime import datetime, timezone
 
-    # Check cache first
+    # Check cache first (no lock needed for reads)
     cached = leaderboard_cache_collection.find_one(sort=[("cachedAt", -1)])
     if cached:
         return cached["entries"], cached.get("totalUsers", 0)
 
-    # Get public user IDs
-    public_uids = [
-        p["userId"] for p in user_profiles_collection.find(
-            {"tierListVisibility": "public"}, {"userId": 1}
-        )
-    ]
-    if not public_uids:
-        return [], 0
+    # Acquire lock so only one thread rebuilds the cache
+    with _leaderboard_lock:
+        # Double-check after acquiring lock — another thread may have rebuilt
+        cached = leaderboard_cache_collection.find_one(sort=[("cachedAt", -1)])
+        if cached:
+            return cached["entries"], cached.get("totalUsers", 0)
 
-    # Get all rankings from public users
-    rankings = list(user_rankings_collection.find({"userId": {"$in": public_uids}}))
+        # Get public user IDs
+        public_uids = [
+            p["userId"] for p in user_profiles_collection.find(
+                {"tierListVisibility": "public"}, {"userId": 1}
+            )
+        ]
+        if not public_uids:
+            return [], 0
 
-    # Aggregate per actress
-    actress_stats: dict = {}
-    for r in rankings:
-        aid = r["actressId"]
-        tier = r.get("tier")
-        if not tier or tier not in TIER_WEIGHT:
-            continue
-        if aid not in actress_stats:
-            actress_stats[aid] = {"totalLists": 0, "tierSum": 0, "tierCounts": {}, "topTierCount": 0}
-        stats = actress_stats[aid]
-        stats["totalLists"] += 1
-        stats["tierSum"] += TIER_WEIGHT[tier]
-        stats["tierCounts"][tier] = stats["tierCounts"].get(tier, 0) + 1
-        if tier in ("splus", "s", "a"):
-            stats["topTierCount"] += 1
+        # Get all rankings from public users
+        rankings = list(user_rankings_collection.find({"userId": {"$in": public_uids}}))
 
-    if not actress_stats:
-        return [], len(public_uids)
+        # Aggregate per actress
+        actress_stats: dict = {}
+        for r in rankings:
+            aid = r["actressId"]
+            tier = r.get("tier")
+            if not tier or tier not in TIER_WEIGHT:
+                continue
+            if aid not in actress_stats:
+                actress_stats[aid] = {"totalLists": 0, "tierSum": 0, "tierCounts": {}, "topTierCount": 0}
+            stats = actress_stats[aid]
+            stats["totalLists"] += 1
+            stats["tierSum"] += TIER_WEIGHT[tier]
+            stats["tierCounts"][tier] = stats["tierCounts"].get(tier, 0) + 1
+            if tier in ("splus", "s", "a"):
+                stats["topTierCount"] += 1
 
-    # Fetch actress info
-    actress_ids = list(actress_stats.keys())
-    actress_docs = {
-        str(d["_id"]): d
-        for d in actresses_collection.find({"_id": {"$in": [_oid(a) for a in actress_ids]}}, {"gallery": 0})
-    }
+        if not actress_stats:
+            return [], len(public_uids)
 
-    # Build leaderboard entries
-    entries = []
-    for aid, stats in actress_stats.items():
-        doc = actress_docs.get(aid)
-        if not doc:
-            continue
-        avg_score = stats["tierSum"] / stats["totalLists"] if stats["totalLists"] > 0 else 0
-        entries.append({
-            "actressId": aid,
-            "name": doc.get("name", ""),
-            "image": doc.get("image"),
-            "known": doc.get("known", ""),
-            "genre": doc.get("genre", ""),
-            "totalLists": stats["totalLists"],
-            "avgScore": round(avg_score, 2),
-            "topTierCount": stats["topTierCount"],
-            "tierCounts": stats["tierCounts"],
+        # Fetch actress info
+        actress_ids = list(actress_stats.keys())
+        actress_docs = {
+            str(d["_id"]): d
+            for d in actresses_collection.find({"_id": {"$in": [_oid(a) for a in actress_ids]}}, {"gallery": 0})
+        }
+
+        # Build leaderboard entries
+        entries = []
+        for aid, stats in actress_stats.items():
+            doc = actress_docs.get(aid)
+            if not doc:
+                continue
+            avg_score = stats["tierSum"] / stats["totalLists"] if stats["totalLists"] > 0 else 0
+            entries.append({
+                "actressId": aid,
+                "name": doc.get("name", ""),
+                "image": doc.get("image"),
+                "known": doc.get("known", ""),
+                "genre": doc.get("genre", ""),
+                "totalLists": stats["totalLists"],
+                "avgScore": round(avg_score, 2),
+                "topTierCount": stats["topTierCount"],
+                "tierCounts": stats["tierCounts"],
+            })
+
+        entries.sort(key=lambda e: (-e["avgScore"], -e["totalLists"]))
+        for i, e in enumerate(entries):
+            e["rank"] = i + 1
+
+        total_users = len(public_uids)
+
+        # Cache results
+        leaderboard_cache_collection.insert_one({
+            "entries": entries,
+            "totalUsers": total_users,
+            "cachedAt": datetime.now(timezone.utc),
         })
 
-    entries.sort(key=lambda e: (-e["avgScore"], -e["totalLists"]))
-    for i, e in enumerate(entries):
-        e["rank"] = i + 1
-
-    total_users = len(public_uids)
-
-    # Cache results
-    leaderboard_cache_collection.insert_one({
-        "entries": entries,
-        "totalUsers": total_users,
-        "cachedAt": datetime.now(timezone.utc),
-    })
-
-    return entries, total_users
+        return entries, total_users
 
 
 @app.get("/api/leaderboard")
