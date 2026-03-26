@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>K-Drama Actress Tier List - Project Showcase</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #0a0a0a;
+      color: #e0e0e0;
+      line-height: 1.6;
+      padding: 40px;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    @media print {
+      body { background: #fff; color: #1a1a1a; padding: 20px; }
+      .hero { background: #1a1a1a !important; }
+      .hero * { color: #fff !important; }
+      .section { border-color: #ddd !important; }
+      .stat-card { background: #f5f5f5 !important; border-color: #ddd !important; }
+      .stat-value { color: #E500A4 !important; }
+      .tech-tag { background: #f0f0f0 !important; color: #333 !important; border-color: #ccc !important; }
+      .feature-card { background: #f9f9f9 !important; border-color: #ddd !important; }
+      .feature-icon { background: #f0f0f0 !important; }
+      .sprint-item { border-color: #ddd !important; }
+      .sprint-num { background: #E500A4 !important; color: #fff !important; }
+      .arch-layer { background: #f5f5f5 !important; border-color: #ddd !important; }
+      .endpoint-group { background: #f9f9f9 !important; }
+      h3 { color: #1a1a1a !important; }
+      p, li, span { color: #333 !important; }
+      .section-label { color: #E500A4 !important; }
+      a { color: #E500A4 !important; }
+      .page-break { page-break-before: always; }
+    }
+
+    /* Hero */
+    .hero {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      border-radius: 20px;
+      padding: 48px;
+      margin-bottom: 32px;
+      text-align: center;
+    }
+    .hero-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: #E500A4;
+      border: 1px solid rgba(229,0,164,0.3);
+      padding: 6px 16px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 36px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .hero-sub {
+      font-size: 16px;
+      color: #888;
+      margin-bottom: 20px;
+    }
+    .hero-link {
+      display: inline-block;
+      color: #E500A4;
+      font-weight: 600;
+      font-size: 14px;
+      text-decoration: none;
+      border: 1px solid rgba(229,0,164,0.3);
+      padding: 8px 20px;
+      border-radius: 10px;
+      margin: 0 6px;
+    }
+    .hero-link:hover { background: rgba(229,0,164,0.1); }
+
+    /* Sections */
+    .section {
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+    }
+    .section-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #E500A4;
+      margin-bottom: 8px;
+    }
+    .section h2 {
+      font-family: 'Playfair Display', serif;
+      font-size: 24px;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+
+    /* Stats Grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .stat-card {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+      color: #E500A4;
+      display: block;
+    }
+    .stat-label {
+      font-size: 11px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+
+    /* Tech Stack */
+    .tech-section { margin-bottom: 20px; }
+    .tech-section h3 {
+      font-size: 13px;
+      font-weight: 700;
+      color: #aaa;
+      margin-bottom: 8px;
+    }
+    .tech-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+    .tech-tag {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      padding: 6px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #ccc;
+    }
+    .tech-tag.primary {
+      border-color: rgba(229,0,164,0.3);
+      color: #E500A4;
+    }
+
+    /* Features */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .feature-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .feature-icon {
+      width: 36px; height: 36px;
+      background: rgba(229,0,164,0.1);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .feature-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ddd;
+      margin-bottom: 4px;
+    }
+    .feature-desc {
+      font-size: 12px;
+      color: #888;
+      line-height: 1.5;
+    }
+
+    /* Sprint Timeline */
+    .sprint-timeline { display: flex; flex-direction: column; gap: 12px; }
+    .sprint-item {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      padding: 14px 16px;
+      border: 1px solid rgba(255,255,255,0.04);
+      border-radius: 12px;
+    }
+    .sprint-num {
+      background: #E500A4;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 800;
+      width: 28px; height: 28px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .sprint-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #ddd;
+      margin-bottom: 2px;
+    }
+    .sprint-desc {
+      font-size: 12px;
+      color: #888;
+      line-height: 1.5;
+    }
+
+    /* Architecture */
+    .arch-stack { display: flex; flex-direction: column; gap: 8px; }
+    .arch-layer {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .arch-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #E500A4;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      min-width: 80px;
+    }
+    .arch-detail {
+      font-size: 13px;
+      color: #ccc;
+      text-align: right;
+    }
+
+    /* API Endpoints */
+    .endpoint-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+    .endpoint-group {
+      background: rgba(255,255,255,0.02);
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .endpoint-group h4 {
+      font-size: 12px;
+      font-weight: 700;
+      color: #E500A4;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .endpoint-group ul {
+      list-style: none;
+      font-size: 12px;
+      color: #999;
+    }
+    .endpoint-group li {
+      padding: 2px 0;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+    }
+    .method {
+      font-weight: 700;
+      display: inline-block;
+      min-width: 52px;
+    }
+    .method.get { color: #3AD9A0; }
+    .method.post { color: #FFC53A; }
+    .method.put { color: #FF7B3A; }
+    .method.patch { color: #7B93FF; }
+    .method.del { color: #FF2942; }
+
+    /* About */
+    .about-text {
+      font-size: 15px;
+      color: #999;
+      line-height: 1.8;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 24px;
+      color: #555;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-badge">Full-Stack Project Showcase</div>
+    <h1>K-Drama Actress Tier List</h1>
+    <p class="hero-sub">A social tier ranking platform for Korean drama actresses with AI recommendations, community leaderboards, and real-time collaboration.</p>
+    <a class="hero-link" href="https://kdrama-ranking-1.vercel.app/" target="_blank">Live Demo</a>
+    <a class="hero-link" href="https://github.com/toanpro24/kdrama-ranking" target="_blank">GitHub Repo</a>
+  </div>
+
+  <!-- At a Glance -->
+  <div class="section">
+    <div class="section-label">At a Glance</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-value">31</span>
+        <span class="stat-label">API Endpoints</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value">19</span>
+        <span class="stat-label">Components</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value">132</span>
+        <span class="stat-label">Unit Tests</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value">7</span>
+        <span class="stat-label">DB Collections</span>
+      </div>
+    </div>
+
+    <p class="about-text">
+      Built as a personal project to explore full-stack development at scale. The app lets users drag-and-drop rank Korean drama actresses into tiers (S+ through D), track dramas, share lists publicly, follow other users, and discover trending actresses through a community leaderboard. Features include AI-powered drama recommendations via Claude API, TMDB integration for actress and drama data, and a PWA-enabled frontend.
+    </p>
+  </div>
+
+  <!-- Tech Stack -->
+  <div class="section">
+    <div class="section-label">Tech Stack</div>
+    <h2>Technologies Used</h2>
+
+    <div class="tech-section">
+      <h3>Frontend</h3>
+      <div class="tech-tags">
+        <span class="tech-tag primary">React 19</span>
+        <span class="tech-tag primary">TypeScript</span>
+        <span class="tech-tag">Vite</span>
+        <span class="tech-tag">React Router</span>
+        <span class="tech-tag">Vitest</span>
+        <span class="tech-tag">React Testing Library</span>
+        <span class="tech-tag">html-to-image</span>
+      </div>
+    </div>
+
+    <div class="tech-section">
+      <h3>Backend</h3>
+      <div class="tech-tags">
+        <span class="tech-tag primary">Python</span>
+        <span class="tech-tag primary">FastAPI</span>
+        <span class="tech-tag">Pydantic</span>
+        <span class="tech-tag">SlowAPI (Rate Limiting)</span>
+      </div>
+    </div>
+
+    <div class="tech-section">
+      <h3>Database & Auth</h3>
+      <div class="tech-tags">
+        <span class="tech-tag primary">MongoDB</span>
+        <span class="tech-tag primary">Firebase Auth</span>
+        <span class="tech-tag">Google Sign-In</span>
+      </div>
+    </div>
+
+    <div class="tech-section">
+      <h3>APIs & Integrations</h3>
+      <div class="tech-tags">
+        <span class="tech-tag">TMDB API</span>
+        <span class="tech-tag">Claude AI API</span>
+        <span class="tech-tag">Wikimedia API</span>
+      </div>
+    </div>
+
+    <div class="tech-section">
+      <h3>Deployment</h3>
+      <div class="tech-tags">
+        <span class="tech-tag">Vercel (Frontend)</span>
+        <span class="tech-tag">Render (Backend)</span>
+        <span class="tech-tag">MongoDB Atlas</span>
+        <span class="tech-tag">PWA / Service Worker</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Features -->
+  <div class="section">
+    <div class="section-label">Features</div>
+    <h2>Core Functionality</h2>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">&#9775;</div>
+        <div>
+          <div class="feature-title">Drag-and-Drop Tier Ranking</div>
+          <div class="feature-desc">Rank actresses into S+, S, A, B, C, D tiers with intuitive drag-and-drop. 10-point weighted scoring system. Guest mode with local interaction.</div>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">&#128269;</div>
+        <div>
+          <div class="feature-title">TMDB Integration</div>
+          <div class="feature-desc">Search and add any Korean actress from TMDB. Auto-fetches drama credits, gallery photos from 5 sources, and biographical data.</div>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">&#127942;</div>
+        <div>
+          <div class="feature-title">Community Leaderboard</div>
+          <div class="feature-desc">Global rankings aggregated across all public users. Sort by score, lists, or top-tier count. Genre filtering. TTL-cached with MongoDB.</div>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">&#128293;</div>
+        <div>
+          <div class="feature-title">Trending Analytics</div>
+          <div class="feature-desc">Trending tab showing actresses ranked by popularity x quality score. Surfaces rising favorites across the community.</div>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">&#128101;</div>
+        <div>
+          <div class="feature-title">Social Follow System</div>
+          <div class="feature-desc">Follow/unfollow users, view following list with ranked counts, follower/following stats. Follow button on shared tier lists.</div>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">&#128279;</div>
+        <div>
+          <div class="feature-title">Shareable Tier Lists</div>
+          <div class="feature-desc">Public/link-only/private visibility. Custom share slugs. Dynamic OG meta tags for social previews. Screenshot capture for sharing.</div>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">&#9878;</div>
+        <div>
+          <div class="feature-title">Side-by-Side Comparison</div>
+          <div class="feature-desc">Compare two users' tier lists with agreement stats, exact match percentage, and highlighted matching rows.</div>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">&#129302;</div>
+        <div>
+          <div class="feature-title">AI Recommendations</div>
+          <div class="feature-desc">Claude-powered chat assistant that analyzes your rankings and watch history to suggest new dramas. Real-time SSE streaming.</div>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">&#128250;</div>
+        <div>
+          <div class="feature-title">Drama Tracking</div>
+          <div class="feature-desc">Rate dramas 1-10, track watch status (watching, watched, plan to watch, dropped). Full watchlist management page.</div>
+        </div>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">&#128202;</div>
+        <div>
+          <div class="feature-title">Statistics Dashboard</div>
+          <div class="feature-desc">Personal analytics: tier distribution, genre breakdown, total ranked/unranked counts. Per-actress community stats with tier distribution bars.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Architecture -->
+  <div class="section page-break">
+    <div class="section-label">Architecture</div>
+    <h2>System Design</h2>
+
+    <div class="arch-stack">
+      <div class="arch-layer">
+        <span class="arch-label">Client</span>
+        <span class="arch-detail">React 19 + TypeScript + Vite | PWA with Service Worker (network-first for code, cache-first for assets)</span>
+      </div>
+      <div class="arch-layer">
+        <span class="arch-label">Auth</span>
+        <span class="arch-detail">Firebase Auth (Google Sign-In) | JWT token verification on backend</span>
+      </div>
+      <div class="arch-layer">
+        <span class="arch-label">API</span>
+        <span class="arch-detail">FastAPI (Python) | 31 RESTful endpoints | CORS | Rate limiting via SlowAPI</span>
+      </div>
+      <div class="arch-layer">
+        <span class="arch-label">Database</span>
+        <span class="arch-detail">MongoDB Atlas | 7 collections | TTL indexes | Aggregation pipelines</span>
+      </div>
+      <div class="arch-layer">
+        <span class="arch-label">External</span>
+        <span class="arch-detail">TMDB API | Claude AI (Haiku) | Wikimedia Commons | Wikipedia REST API</span>
+      </div>
+      <div class="arch-layer">
+        <span class="arch-label">Deploy</span>
+        <span class="arch-detail">Vercel (frontend) | Render (backend) | MongoDB Atlas (database)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Endpoints -->
+  <div class="section">
+    <div class="section-label">API Design</div>
+    <h2>31 RESTful Endpoints</h2>
+
+    <div class="endpoint-grid">
+      <div class="endpoint-group">
+        <h4>Actresses & Rankings</h4>
+        <ul>
+          <li><span class="method get">GET</span> /api/actresses</li>
+          <li><span class="method get">GET</span> /api/actresses/:id</li>
+          <li><span class="method get">GET</span> /api/search-actress</li>
+          <li><span class="method get">GET</span> /api/search-actress/:tmdb_id</li>
+          <li><span class="method post">POST</span> /api/actresses</li>
+          <li><span class="method patch">PATCH</span> /api/actresses/:id/tier</li>
+          <li><span class="method patch">PATCH</span> /api/actresses/bulk-tier</li>
+          <li><span class="method del">DEL</span> /api/actresses/:id</li>
+          <li><span class="method del">DEL</span> /api/actresses/:id/admin</li>
+        </ul>
+      </div>
+
+      <div class="endpoint-group">
+        <h4>Dramas & Watchlist</h4>
+        <ul>
+          <li><span class="method get">GET</span> /api/dramas</li>
+          <li><span class="method get">GET</span> /api/dramas/:title</li>
+          <li><span class="method get">GET</span> /api/watchlist</li>
+          <li><span class="method patch">PATCH</span> /api/actresses/:id/dramas/:title/rating</li>
+          <li><span class="method patch">PATCH</span> /api/actresses/:id/dramas/:title/watch-status</li>
+        </ul>
+      </div>
+
+      <div class="endpoint-group">
+        <h4>Social & Profiles</h4>
+        <ul>
+          <li><span class="method get">GET</span> /api/profile</li>
+          <li><span class="method put">PUT</span> /api/profile</li>
+          <li><span class="method get">GET</span> /api/shared/:slug</li>
+          <li><span class="method get">GET</span> /api/compare/:slug1/:slug2</li>
+          <li><span class="method post">POST</span> /api/follow/:slug</li>
+          <li><span class="method del">DEL</span> /api/follow/:slug</li>
+          <li><span class="method get">GET</span> /api/following</li>
+          <li><span class="method get">GET</span> /api/followers/count</li>
+          <li><span class="method get">GET</span> /api/is-following/:slug</li>
+        </ul>
+      </div>
+
+      <div class="endpoint-group">
+        <h4>Leaderboard & Analytics</h4>
+        <ul>
+          <li><span class="method get">GET</span> /api/leaderboard</li>
+          <li><span class="method get">GET</span> /api/trending</li>
+          <li><span class="method get">GET</span> /api/actresses/:id/community</li>
+          <li><span class="method get">GET</span> /api/stats</li>
+          <li><span class="method post">POST</span> /api/chat</li>
+          <li><span class="method post">POST</span> /api/reset</li>
+          <li><span class="method post">POST</span> /api/clear-tiers</li>
+          <li><span class="method post">POST</span> /api/refresh-all</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Database Schema -->
+  <div class="section">
+    <div class="section-label">Database</div>
+    <h2>MongoDB Collections</h2>
+
+    <div class="sprint-timeline">
+      <div class="sprint-item">
+        <div class="sprint-num" style="font-size:10px">1</div>
+        <div>
+          <div class="sprint-title">actresses</div>
+          <div class="sprint-desc">Core actress data: name, image, genre, dramas, gallery photos, birth info. Indexed on dramas.title.</div>
+        </div>
+      </div>
+      <div class="sprint-item">
+        <div class="sprint-num" style="font-size:10px">2</div>
+        <div>
+          <div class="sprint-title">user_rankings</div>
+          <div class="sprint-desc">Per-user tier placements. Compound unique index on (userId, actressId).</div>
+        </div>
+      </div>
+      <div class="sprint-item">
+        <div class="sprint-num" style="font-size:10px">3</div>
+        <div>
+          <div class="sprint-title">user_drama_status</div>
+          <div class="sprint-desc">Watch status and ratings per drama per user. Compound unique index on (userId, actressId, dramaTitle).</div>
+        </div>
+      </div>
+      <div class="sprint-item">
+        <div class="sprint-num" style="font-size:10px">4</div>
+        <div>
+          <div class="sprint-title">user_actresses</div>
+          <div class="sprint-desc">Which actresses each user has in their pool. Enables per-user customization beyond the default 36.</div>
+        </div>
+      </div>
+      <div class="sprint-item">
+        <div class="sprint-num" style="font-size:10px">5</div>
+        <div>
+          <div class="sprint-title">user_profiles</div>
+          <div class="sprint-desc">Display name, bio, share slug, visibility (private/link_only/public), picture. Unique indexes on userId and shareSlug.</div>
+        </div>
+      </div>
+      <div class="sprint-item">
+        <div class="sprint-num" style="font-size:10px">6</div>
+        <div>
+          <div class="sprint-title">user_follows</div>
+          <div class="sprint-desc">Social follow relationships. Compound unique index on (followerId, followingId). Indexed both directions for fast lookups.</div>
+        </div>
+      </div>
+      <div class="sprint-item">
+        <div class="sprint-num" style="font-size:10px">7</div>
+        <div>
+          <div class="sprint-title">leaderboard_cache</div>
+          <div class="sprint-desc">Cached leaderboard aggregation results. TTL index on cachedAt (5-minute expiry) for automatic cache invalidation.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Development Sprints -->
+  <div class="section page-break">
+    <div class="section-label">Development Process</div>
+    <h2>Built Across 5 Sprints</h2>
+
+    <div class="sprint-timeline">
+      <div class="sprint-item">
+        <div class="sprint-num">1</div>
+        <div>
+          <div class="sprint-title">User Profiles Foundation</div>
+          <div class="sprint-desc">User profiles collection, profile API endpoints, UserSettings page with display name/bio/slug editor, SharedTierList page for viewing others' rankings with dynamic OG meta tags.</div>
+        </div>
+      </div>
+      <div class="sprint-item">
+        <div class="sprint-num">2</div>
+        <div>
+          <div class="sprint-title">Share Tier Lists</div>
+          <div class="sprint-desc">Enhanced share modal with screenshot capture and link sharing. Auto-visibility upgrade prompt (private to link_only). Privacy controls with three visibility levels. Comprehensive UI tests.</div>
+        </div>
+      </div>
+      <div class="sprint-item">
+        <div class="sprint-num">3</div>
+        <div>
+          <div class="sprint-title">Global Leaderboard</div>
+          <div class="sprint-desc">Aggregated rankings across public users with weighted 10-point scoring. Top-3 podium with gradient cards. Sortable by score, lists, or top-tier count. Genre filtering. TTL-cached in MongoDB.</div>
+        </div>
+      </div>
+      <div class="sprint-item">
+        <div class="sprint-num">4</div>
+        <div>
+          <div class="sprint-title">Compare Lists & Community Stats</div>
+          <div class="sprint-desc">Side-by-side tier list comparison with agreement percentage and exact match stats. Per-actress community ranking cards with tier distribution bars, average scores, and rank badges.</div>
+        </div>
+      </div>
+      <div class="sprint-item">
+        <div class="sprint-num">5</div>
+        <div>
+          <div class="sprint-title">Follow System & Trending</div>
+          <div class="sprint-desc">Follow/unfollow users with follower counts. Following page with user cards and compare shortcuts. Trending leaderboard tab with popularity x quality scoring algorithm.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Testing -->
+  <div class="section">
+    <div class="section-label">Quality Assurance</div>
+    <h2>132 Unit Tests Across 12 Test Suites</h2>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div>
+          <div class="feature-title">Component Testing</div>
+          <div class="feature-desc">ActressCard (15), App (10), UserSettings (10), SharedTierList (11), Leaderboard (15), CompareLists (10), FollowingPage (9)</div>
+        </div>
+      </div>
+      <div class="feature-card">
+        <div>
+          <div class="feature-title">Unit Testing</div>
+          <div class="feature-desc">API client functions (16), Constants & scoring (16), Type definitions (12), Toast notifications (8)</div>
+        </div>
+      </div>
+    </div>
+    <p style="font-size:13px; color:#888; margin-top:16px;">
+      Built with <strong>Vitest</strong> and <strong>React Testing Library</strong>. Tests cover rendering, user interactions, API mocking, error states, authentication gates, responsive behavior, and edge cases.
+    </p>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <p>Built by <strong>Toan Pham</strong> | Michigan State University, Computer Science</p>
+    <p style="margin-top:4px;">
+      <a href="https://kdrama-ranking-1.vercel.app/" style="color:#E500A4; text-decoration:none;">kdrama-ranking-1.vercel.app</a>
+      &nbsp;&middot;&nbsp;
+      <a href="https://github.com/toanpro24/kdrama-ranking" style="color:#E500A4; text-decoration:none;">github.com/toanpro24/kdrama-ranking</a>
+    </p>
+  </div>
+
+</body>
+</html>
