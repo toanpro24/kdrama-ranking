@@ -287,9 +287,9 @@ if os.path.isdir(_static_dir):
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_credentials=False,
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Authorization", "Content-Type", "X-API-Key"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 
@@ -932,6 +932,9 @@ def update_profile(data: ProfileUpdate, user=Depends(require_user)):
     if not updates:
         raise HTTPException(400, "No fields to update")
     user_profiles_collection.update_one({"userId": user["uid"]}, {"$set": updates})
+    # When going private, remove all followers to prevent data leaks
+    if updates.get("tierListVisibility") == "private":
+        user_follows_collection.delete_many({"followingId": user["uid"]})
     return _get_or_create_profile(user)
 
 
@@ -1211,6 +1214,9 @@ def get_following(user=Depends(require_user)):
     for f in follows:
         profile = profiles.get(f["followingId"])
         if not profile:
+            continue
+        # Skip users who have since gone private (safety net)
+        if profile.get("tierListVisibility") == "private":
             continue
         # Count how many actresses they've ranked
         ranked_count = user_rankings_collection.count_documents({"userId": f["followingId"]})

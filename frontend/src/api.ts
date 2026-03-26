@@ -2,7 +2,6 @@ import type { Actress, Stats, ChatMessage, UserProfile, SharedTierListData, Lead
 import { toast } from "./toast";
 
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
-const ADMIN_KEY = import.meta.env.VITE_ADMIN_API_KEY || "";
 
 // Auth token getter — set by AuthContext on mount
 let _getToken: () => Promise<string | null> = async () => null;
@@ -14,7 +13,6 @@ async function authHeaders(): Promise<Record<string, string>> {
   const h: Record<string, string> = { "Content-Type": "application/json" };
   const token = await _getToken();
   if (token) h["Authorization"] = `Bearer ${token}`;
-  if (ADMIN_KEY) h["X-API-Key"] = ADMIN_KEY;
   return h;
 }
 

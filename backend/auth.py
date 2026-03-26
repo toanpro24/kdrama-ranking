@@ -30,9 +30,13 @@ def get_current_user(authorization: str = Header(default="")) -> dict | None:
 
     Returns dict with uid, email, name, picture — or None if no token (guest mode).
     """
+    if not authorization:
+        return None  # No header — guest mode
     if not authorization.startswith("Bearer "):
-        return None
-    token = authorization[7:]
+        raise HTTPException(status_code=401, detail="Malformed Authorization header — expected 'Bearer <token>'")
+    token = authorization[7:].strip()
+    if not token:
+        raise HTTPException(status_code=401, detail="Empty Bearer token")
     if not firebase_admin._apps:
         return None
     try:
