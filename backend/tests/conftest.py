@@ -56,25 +56,55 @@ _mongo_patch.start()
 # Now import the app — database.py will use our mock MongoClient
 from main import app, _oid, _classify_category, _merge_user_data, _SHOW_GENRE_IDS  # noqa: E402
 import main as main_module  # noqa: E402
+import tmdb as tmdb_module  # noqa: E402
+import helpers as helpers_module  # noqa: E402
+import routes.actresses as actresses_route  # noqa: E402
+import routes.dramas as dramas_route  # noqa: E402
+import routes.profiles as profiles_route  # noqa: E402
+import routes.social as social_route  # noqa: E402
+import routes.leaderboard as leaderboard_route  # noqa: E402
+import routes.chat as chat_route  # noqa: E402
+import routes.admin as admin_route  # noqa: E402
 
 # Disable rate limiter for tests so we don't hit rate limits.
 # slowapi's Limiter stores this as ._enabled (set via constructor's enabled param).
 app.state.limiter.enabled = False
 
-# After import, also ensure main module's collection references point to our mocks.
-# (from database import ... copies the reference at import time; they should already
-# be our mocks, but we force them here for safety.)
-main_module.actresses_collection = _mock_actresses
-main_module.user_rankings_collection = _mock_rankings
-main_module.user_drama_status_collection = _mock_drama_status
-main_module.user_actresses_collection = _mock_user_actresses
-
-# Also patch in database module so any other module that imported from it is consistent
+# Patch collection references on ALL modules that imported them.
+# pymongo.MongoClient is mocked, so these are already MagicMocks via database.py,
+# but we force-assign for safety in case of import ordering issues.
 import database as db_module  # noqa: E402
-db_module.actresses_collection = _mock_actresses
-db_module.user_rankings_collection = _mock_rankings
-db_module.user_drama_status_collection = _mock_drama_status
-db_module.user_actresses_collection = _mock_user_actresses
+_all_modules_with_collections = [
+    db_module, main_module, helpers_module,
+    actresses_route, dramas_route, profiles_route, social_route,
+    leaderboard_route, chat_route, admin_route,
+]
+for mod in _all_modules_with_collections:
+    if hasattr(mod, "actresses_collection"):
+        mod.actresses_collection = _mock_actresses
+    if hasattr(mod, "user_rankings_collection"):
+        mod.user_rankings_collection = _mock_rankings
+    if hasattr(mod, "user_drama_status_collection"):
+        mod.user_drama_status_collection = _mock_drama_status
+    if hasattr(mod, "user_actresses_collection"):
+        mod.user_actresses_collection = _mock_user_actresses
+
+# Also need to mock profiles and follows collections for social/profile routes
+_mock_profiles = MagicMock(name="user_profiles_collection")
+_mock_follows = MagicMock(name="user_follows_collection")
+_mock_leaderboard_cache = MagicMock(name="leaderboard_cache_collection")
+
+for mod in _all_modules_with_collections:
+    if hasattr(mod, "user_profiles_collection"):
+        mod.user_profiles_collection = _mock_profiles
+    if hasattr(mod, "user_follows_collection"):
+        mod.user_follows_collection = _mock_follows
+    if hasattr(mod, "leaderboard_cache_collection"):
+        mod.leaderboard_cache_collection = _mock_leaderboard_cache
+
+db_module.user_profiles_collection = _mock_profiles
+db_module.user_follows_collection = _mock_follows
+db_module.leaderboard_cache_collection = _mock_leaderboard_cache
 
 # And in seed module
 import seed as seed_module  # noqa: E402
@@ -135,11 +165,14 @@ def _make_doc(doc: dict | None = None) -> dict:
 @pytest.fixture(autouse=True)
 def _reset_mocks():
     """Reset all collection mocks and TMDB cache before each test."""
-    _mock_actresses.reset_mock()
-    _mock_rankings.reset_mock()
-    _mock_drama_status.reset_mock()
-    _mock_user_actresses.reset_mock()
-    main_module._tmdb_cache.clear()
+    for m in (_mock_actresses, _mock_rankings, _mock_drama_status,
+              _mock_user_actresses, _mock_profiles, _mock_follows,
+              _mock_leaderboard_cache):
+        m.reset_mock(return_value=True, side_effect=True)
+    tmdb_module._tmdb_cache.clear()
+    # Re-apply defaults that client_authed expects
+    _mock_user_actresses.find_one.return_value = {"_id": "existing"}
+    _mock_user_actresses.find.return_value = [{"actressId": SAMPLE_ACTRESS_ID}]
     yield
 
 
@@ -161,6 +194,21 @@ def drama_status_col():
 @pytest.fixture()
 def user_actresses_col():
     return _mock_user_actresses
+
+
+@pytest.fixture()
+def profiles_col():
+    return _mock_profiles
+
+
+@pytest.fixture()
+def follows_col():
+    return _mock_follows
+
+
+@pytest.fixture()
+def leaderboard_cache_col():
+    return _mock_leaderboard_cache
 
 
 @pytest.fixture()
@@ -223,19 +271,19 @@ async def client_authed(tmdb_mock):
     app.router.lifespan_context = _test_lifespan
 
     # Use the tmdb_mock router as the transport so all outgoing requests are intercepted
-    main_module._http_client = httpx.AsyncClient(
+    tmdb_module.set_http_client(httpx.AsyncClient(
         transport=httpx.MockTransport(tmdb_mock.async_handler),
         timeout=5,
-    )
-    # Default: user already has a seeded list (count_documents > 0)
-    _mock_user_actresses.count_documents.return_value = 1
+    ))
+    # Default: user already has a seeded list (find_one returns a doc)
+    _mock_user_actresses.find_one.return_value = {"_id": "existing"}
     # Default: return the actress IDs the user has
     _mock_user_actresses.find.return_value = [{"actressId": SAMPLE_ACTRESS_ID}]
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
-    await main_module._http_client.aclose()
-    main_module._http_client = None
+    await tmdb_module._http_client.aclose()
+    tmdb_module.set_http_client(None)
 
     app.router.lifespan_context = original_lifespan
     app.dependency_overrides.clear()
@@ -258,15 +306,15 @@ async def client_guest(tmdb_mock):
     original_lifespan = app.router.lifespan_context
     app.router.lifespan_context = _test_lifespan
 
-    main_module._http_client = httpx.AsyncClient(
+    tmdb_module.set_http_client(httpx.AsyncClient(
         transport=httpx.MockTransport(tmdb_mock.async_handler),
         timeout=5,
-    )
+    ))
     transport = httpx.ASGITransport(app=app)
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as ac:
         yield ac
-    await main_module._http_client.aclose()
-    main_module._http_client = None
+    await tmdb_module._http_client.aclose()
+    tmdb_module.set_http_client(None)
 
     app.router.lifespan_context = original_lifespan
     app.dependency_overrides.clear()
