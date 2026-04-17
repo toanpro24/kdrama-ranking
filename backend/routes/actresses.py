@@ -16,6 +16,7 @@ from database import (
 )
 from helpers import _oid, _merge_user_data, _ensure_user_list
 from models import ActressCreate, TierUpdate, VALID_TIERS
+from routes.leaderboard import invalidate_leaderboard_cache
 from tmdb import (
     TMDB_IMG,
     _tmdb_get,
@@ -117,6 +118,7 @@ def update_tier(request: Request, actress_id: str, update: TierUpdate, user=Depe
         )
     else:
         user_rankings_collection.delete_one({"userId": user["uid"], "actressId": actress_id})
+    invalidate_leaderboard_cache()
     return {"id": actress_id, "tier": update.tier}
 
 
@@ -136,6 +138,7 @@ def bulk_update_tiers(request: Request, updates: list[dict], user=Depends(requir
             )
         else:
             user_rankings_collection.delete_one({"userId": user["uid"], "actressId": u["id"]})
+    invalidate_leaderboard_cache()
     return {"updated": len(updates)}
 
 

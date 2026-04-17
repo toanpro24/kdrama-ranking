@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { fetchLeaderboard, fetchTrending } from "./api";
-import type { LeaderboardEntry, TrendingEntry } from "./types";
+import { fetchLeaderboard, fetchTrending, fetchPublicUsers, followUser, unfollowUser } from "./api";
+import type { LeaderboardEntry, TrendingEntry, PublicUser } from "./types";
+import { useAuth } from "./AuthContext";
 import { TIERS, GENRES } from "./constants";
 import "./index.css";
 
@@ -43,9 +44,11 @@ function TierBadges({ tierCounts }: { tierCounts: Record<string, number> }) {
 
 export default function Leaderboard() {
   const navigate = useNavigate();
-  const [tab, setTab] = useState<"leaderboard" | "trending">("leaderboard");
+  const { user } = useAuth();
+  const [tab, setTab] = useState<"leaderboard" | "trending" | "users">("leaderboard");
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [trendingEntries, setTrendingEntries] = useState<TrendingEntry[]>([]);
+  const [publicUsers, setPublicUsers] = useState<PublicUser[]>([]);
   const [totalUsers, setTotalUsers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<"score" | "lists" | "top">("score");
@@ -59,15 +62,34 @@ export default function Leaderboard() {
         setTotalUsers(data.totalUsers);
         setLoading(false);
       });
-    } else {
+    } else if (tab === "trending") {
       setLoading(true);
       fetchTrending().then((data) => {
         setTrendingEntries(data.entries);
         setTotalUsers(data.totalUsers);
         setLoading(false);
       });
+    } else {
+      setLoading(true);
+      fetchPublicUsers().then((data) => {
+        setPublicUsers(data);
+        setLoading(false);
+      });
     }
   }, [sort, genre, tab]);
+
+  const handleToggleFollow = async (u: PublicUser) => {
+    if (!user) {
+      navigate("/");
+      return;
+    }
+    const currentlyFollowing = u.isFollowing;
+    setPublicUsers((prev) => prev.map((p) => p.userId === u.userId ? { ...p, isFollowing: !currentlyFollowing } : p));
+    const ok = currentlyFollowing ? await unfollowUser(u.shareSlug) : await followUser(u.shareSlug);
+    if (!ok) {
+      setPublicUsers((prev) => prev.map((p) => p.userId === u.userId ? { ...p, isFollowing: currentlyFollowing } : p));
+    }
+  };
 
   const topThree = useMemo(() => entries.slice(0, 3), [entries]);
   const rest = useMemo(() => entries.slice(3), [entries]);
@@ -90,6 +112,9 @@ export default function Leaderboard() {
         </button>
         <button className={`lb-tab ${tab === "trending" ? "active" : ""}`} onClick={() => setTab("trending")}>
           Trending
+        </button>
+        <button className={`lb-tab ${tab === "users" ? "active" : ""}`} onClick={() => setTab("users")}>
+          Users
         </button>
       </div>
 
@@ -122,7 +147,43 @@ export default function Leaderboard() {
       )}
 
       {loading ? (
-        <div className="loading">Loading {tab === "trending" ? "trending" : "leaderboard"}...</div>
+        <div className="loading">Loading {tab === "trending" ? "trending" : tab === "users" ? "users" : "leaderboard"}...</div>
+      ) : tab === "users" ? (
+        publicUsers.length === 0 ? (
+          <div className="settings-empty">
+            <h2>No public users yet</h2>
+            <p style={{ color: "#666", marginTop: 8 }}>
+              Users who set their tier list to Public will show up here. Be the first by changing your visibility in Settings.
+            </p>
+          </div>
+        ) : (
+          <div className="fw-list">
+            {publicUsers.map((u) => (
+              <div key={u.userId} className="fw-card">
+                <div className="fw-card-main" onClick={() => navigate(`/tier-list/${u.shareSlug}`)}>
+                  {u.picture ? (
+                    <img className="fw-avatar" src={u.picture} alt="" referrerPolicy="no-referrer" />
+                  ) : (
+                    <div className="fw-avatar-placeholder">{(u.displayName || "?").charAt(0)}</div>
+                  )}
+                  <div className="fw-info">
+                    <span className="fw-name">{u.displayName || "User"}</span>
+                    {u.bio && <span className="fw-bio">{u.bio}</span>}
+                    <span className="fw-meta">{u.rankedCount} ranked</span>
+                  </div>
+                </div>
+                <div className="fw-actions">
+                  <button
+                    className={`follow-btn ${u.isFollowing ? "following" : ""}`}
+                    onClick={(e) => { e.stopPropagation(); handleToggleFollow(u); }}
+                  >
+                    {u.isFollowing ? "Following" : "Follow"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )
       ) : tab === "trending" ? (
         trendingEntries.length === 0 ? (
           <div className="settings-empty">

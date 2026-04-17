@@ -97,6 +97,16 @@ export interface FollowingUser {
   rankedCount: number;
 }
 
+export interface PublicUser {
+  userId: string;
+  displayName: string;
+  picture: string;
+  shareSlug: string;
+  bio: string;
+  rankedCount: number;
+  isFollowing: boolean;
+}
+
 export interface TrendingEntry {
   rank: number;
   actressId: string;

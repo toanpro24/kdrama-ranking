@@ -3,11 +3,12 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pymongo.errors import DuplicateKeyError
 
-from auth import require_user
+from auth import get_current_user, require_user
 from rate_limit import limiter
 from database import (
     user_profiles_collection,
     user_follows_collection,
+    user_rankings_collection,
 )
 
 router = APIRouter(prefix="/api")
@@ -81,6 +82,51 @@ def get_follower_count(user=Depends(require_user)):
     followers = user_follows_collection.count_documents({"followingId": user["uid"]})
     following = user_follows_collection.count_documents({"followerId": user["uid"]})
     return {"followers": followers, "following": following}
+
+
+@router.get("/users/public")
+def list_public_users(user=Depends(get_current_user)):
+    """List users with public tier lists for discovery. Excludes the current user."""
+    query = {"tierListVisibility": "public"}
+    profiles = list(user_profiles_collection.find(query))
+    if not profiles:
+        return []
+
+    current_uid = user["uid"] if user else None
+    profiles = [p for p in profiles if p.get("userId") != current_uid and p.get("shareSlug")]
+
+    uids = [p["userId"] for p in profiles]
+    ranked_counts: dict = {}
+    if uids:
+        pipeline = [
+            {"$match": {"userId": {"$in": uids}, "tier": {"$exists": True, "$ne": None}}},
+            {"$group": {"_id": "$userId", "count": {"$sum": 1}}},
+        ]
+        for row in user_rankings_collection.aggregate(pipeline):
+            ranked_counts[row["_id"]] = row["count"]
+
+    followed_ids: set = set()
+    if current_uid:
+        followed_ids = {
+            f["followingId"] for f in user_follows_collection.find(
+                {"followerId": current_uid}, {"followingId": 1}
+            )
+        }
+
+    result = []
+    for p in profiles:
+        uid = p["userId"]
+        result.append({
+            "userId": uid,
+            "displayName": p.get("displayName", ""),
+            "picture": p.get("picture", ""),
+            "shareSlug": p["shareSlug"],
+            "bio": p.get("bio", ""),
+            "rankedCount": ranked_counts.get(uid, 0),
+            "isFollowing": uid in followed_ids,
+        })
+    result.sort(key=lambda u: (-u["rankedCount"], u["displayName"].lower()))
+    return result
 
 
 @router.get("/is-following/{slug}")

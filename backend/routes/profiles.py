@@ -15,6 +15,7 @@ from database import (
 )
 from helpers import _oid, _merge_user_data, _get_or_create_profile
 from models import ProfileUpdate
+from routes.leaderboard import invalidate_leaderboard_cache
 
 router = APIRouter(prefix="/api")
 
@@ -62,6 +63,9 @@ def update_profile(request: Request, data: ProfileUpdate, user=Depends(require_u
     # When going private, remove all followers to prevent data leaks
     if updates.get("tierListVisibility") == "private":
         user_follows_collection.delete_many({"followingId": user["uid"]})
+    # Visibility change affects which users contribute to the leaderboard
+    if "tierListVisibility" in updates:
+        invalidate_leaderboard_cache()
     return _get_or_create_profile(user)
 
 

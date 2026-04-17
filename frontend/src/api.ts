@@ -1,4 +1,4 @@
-import type { Actress, Stats, ChatMessage, UserProfile, SharedTierListData, LeaderboardData, CommunityStats, CompareData, FollowingUser, TrendingData } from "./types";
+import type { Actress, Stats, ChatMessage, UserProfile, SharedTierListData, LeaderboardData, CommunityStats, CompareData, FollowingUser, PublicUser, TrendingData } from "./types";
 import { toast } from "./toast";
 
 const BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
@@ -166,7 +166,8 @@ export interface WatchlistItem {
 
 export async function fetchWatchlist(): Promise<WatchlistItem[]> {
   try {
-    return await request<WatchlistItem[]>(`${BASE}/watchlist`);
+    const res = await request<{ dramas: WatchlistItem[]; total: number; page: number; pageSize: number }>(`${BASE}/watchlist`);
+    return res.dramas ?? [];
   } catch {
     return [];
   }
@@ -264,6 +265,14 @@ export async function fetchFollowerCount(): Promise<{ followers: number; followi
     return await request<{ followers: number; following: number }>(`${BASE}/followers/count`);
   } catch {
     return { followers: 0, following: 0 };
+  }
+}
+
+export async function fetchPublicUsers(): Promise<PublicUser[]> {
+  try {
+    return await request<PublicUser[]>(`${BASE}/users/public`);
+  } catch {
+    return [];
   }
 }
 

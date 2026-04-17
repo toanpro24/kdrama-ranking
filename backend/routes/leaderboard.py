@@ -22,6 +22,14 @@ router = APIRouter(prefix="/api")
 _leaderboard_lock = threading.Lock()
 
 
+def invalidate_leaderboard_cache():
+    """Clear the cached leaderboard so the next request rebuilds from fresh data.
+
+    Call this whenever ranking inputs change: profile visibility flips, tier updates.
+    """
+    leaderboard_cache_collection.delete_many({})
+
+
 def _build_leaderboard():
     """Aggregate actress rankings across all public users into a leaderboard.
 
